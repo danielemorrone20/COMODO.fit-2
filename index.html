@@ -77,10 +77,52 @@ input[type=text],input[type=number]{background:var(--surface-high);border:1px so
 .chip.sel{background:var(--ydim);border-color:var(--yellow);color:var(--yellow);}
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;gap:12px;}
 .empty-icon{font-size:48px;}
+
+/* WELCOME */
+#screen-welcome{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;transition:opacity .6s;}
+#screen-welcome.fade{opacity:0;pointer-events:none;}
+
+/* ── NUOVE FEATURE ── */
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.toggle{width:44px;height:26px;background:var(--border);border-radius:13px;position:relative;cursor:pointer;transition:background .2s;border:none;}
+.toggle.on{background:var(--yellow);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:transform .2s;}
+.toggle.on::after{transform:translateX(18px);}
+.seg-ctrl{display:flex;background:var(--surface-high);border-radius:8px;overflow:hidden;gap:2px;padding:2px;}
+.seg-btn{flex:1;background:none;border:none;color:var(--muted);font-family:'Oswald';font-size:12px;font-weight:600;padding:6px 4px;cursor:pointer;border-radius:6px;letter-spacing:.04em;}
+.seg-btn.active{background:var(--yellow);color:#111;}
+/* Timer overlay */
+#timer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#timer-circle{width:180px;height:180px;position:relative;}
+#timer-circle svg{transform:rotate(-90deg);}
+#timer-circle .track{fill:none;stroke:var(--border);stroke-width:8;}
+#timer-circle .prog{fill:none;stroke:var(--yellow);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .9s linear;}
+#timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:48px;font-weight:700;color:var(--white);}
+#timer-label{font-family:'Oswald';font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+/* Grafico barre */
+.bar-wrap{display:flex;align-items:flex-end;gap:4px;height:80px;}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.bar{width:100%;background:var(--yellow);border-radius:4px 4px 0 0;min-height:4px;transition:height .3s;}
+.bar-label{font-size:9px;color:var(--muted);font-family:'Oswald';text-align:center;}
+.bar-val{font-size:9px;color:var(--yellow);font-family:'Oswald';font-weight:600;}
+
 </style>
 </head>
 <body>
 <div id="app">
+
+<!-- WELCOME -->
+<div id="screen-welcome">
+  <div style="margin-bottom:40px;">
+    <p class="oswald" style="font-size:36px;font-weight:700;color:var(--white);line-height:1.2;margin-bottom:16px;">
+      Da oggi i tuoi allenamenti<br>saranno più<br><span style="color:var(--yellow);">COMODI.</span>
+    </p>
+    <p style="font-size:16px;color:var(--muted);margin-top:12px;">Iniziamo?</p>
+  </div>
+  <button class="btn btn-p" style="width:200px;font-size:16px;padding:16px;" onclick="chiudiWelcome()">Sì, partiamo →</button>
+  <p class="oswald" style="font-size:22px;font-weight:700;color:var(--border);margin-top:60px;letter-spacing:.1em;">COMODO<span style="color:var(--border);">.fit</span></p>
+</div>
 
 <!-- ONBOARDING -->
 <div id="screen-onboarding" style="display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:24px;">
@@ -140,6 +182,7 @@ input[type=text],input[type=number]{background:var(--surface-high);border:1px so
     <div id="completato-lista" class="card" style="width:100%;margin-bottom:20px;text-align:left;"></div>
     <div id="completato-vol" style="margin-bottom:24px;width:100%;"></div>
     <button class="btn btn-p" onclick="goTo('home')">← Torna alla Home</button>
+    <button class="btn btn-s" style="margin-top:10px;" onclick="condividiConTrainer(S._lastSessioneData)">📤 Invia al trainer</button>
   </div>
 </div>
 
@@ -171,6 +214,7 @@ input[type=text],input[type=number]{background:var(--surface-high);border:1px so
     <button class="back-btn" onclick="goTo('home')">‹</button>
     <h2 class="oswald" style="font-size:24px;font-weight:700;">Profilo</h2>
   </div>
+  <button onclick="goTo('impostazioni')" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;position:absolute;right:16px;top:32px;">⚙</button>
   <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
     <div id="profilo-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:30px;font-family:'Oswald';font-weight:700;color:#111;"></div>
     <span id="profilo-tag" class="tag tag-y"></span>
@@ -184,6 +228,7 @@ input[type=text],input[type=number]{background:var(--surface-high);border:1px so
   <button class="nav-btn active" data-tab="home" onclick="navClick('home')"><span class="nav-icon">⌂</span><span class="nav-label">Home</span></button>
   <button class="nav-btn" data-tab="storico" onclick="navClick('storico')"><span class="nav-icon">◷</span><span class="nav-label">Storico</span></button>
   <button class="nav-btn" data-tab="profilo" onclick="navClick('profilo')"><span class="nav-icon">◉</span><span class="nav-label">Profilo</span></button>
+  <button class="nav-btn" data-tab="impostazioni" onclick="navClick('impostazioni')"><span class="nav-icon">⚙</span><span class="nav-label">Setup</span></button>
 </nav>
 
 <!-- MODAL NUOVA SCHEDA -->
@@ -202,6 +247,70 @@ input[type=text],input[type=number]{background:var(--surface-high);border:1px so
     <p class="oswald" style="font-size:14px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">✦ AI Coach</p>
     <div id="modal-ai-content"></div>
   </div>
+</div>
+
+
+<!-- IMPOSTAZIONI -->
+<div id="screen-impostazioni" class="screen">
+  <div class="page-header">
+    <button class="back-btn" onclick="goTo('home')">‹</button>
+    <h2 class="oswald" style="font-size:24px;font-weight:700;">Impostazioni</h2>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <p class="oswald" style="font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Recupero</p>
+    <div class="settings-row">
+      <div><p style="font-size:14px;font-weight:500;">Timer recupero</p><p style="font-size:12px;color:var(--muted);margin-top:2px;">Si avvia dopo ogni serie completata</p></div>
+      <button class="toggle" id="tog-timer" onclick="toggleSetting('timerOn')"></button>
+    </div>
+    <div class="settings-row">
+      <p style="font-size:14px;font-weight:500;">Durata recupero</p>
+      <div class="seg-ctrl" id="seg-timer">
+        <button class="seg-btn" onclick="setTimerDur(60)">1'</button>
+        <button class="seg-btn" onclick="setTimerDur(90)">1'30</button>
+        <button class="seg-btn" onclick="setTimerDur(120)">2'</button>
+        <button class="seg-btn" onclick="setTimerDur(180)">3'</button>
+        <button class="seg-btn" onclick="setTimerDur(240)">4'</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <p class="oswald" style="font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Notifiche</p>
+    <div class="settings-row">
+      <div><p style="font-size:14px;font-weight:500;">Promemoria allenamento</p><p style="font-size:12px;color:var(--muted);margin-top:2px;">Ti avvisa se non ti alleni</p></div>
+      <button class="toggle" id="tog-notif" onclick="toggleSetting('notifOn')"></button>
+    </div>
+    <div class="settings-row">
+      <p style="font-size:14px;font-weight:500;">Avvisa dopo</p>
+      <div class="seg-ctrl" id="seg-notif">
+        <button class="seg-btn" onclick="setNotifDays(1)">1g</button>
+        <button class="seg-btn" onclick="setNotifDays(2)">2g</button>
+        <button class="seg-btn" onclick="setNotifDays(3)">3g</button>
+        <button class="seg-btn" onclick="setNotifDays(4)">4g</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <p class="oswald" style="font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Trainer</p>
+    <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div><p style="font-size:14px;font-weight:500;">Email trainer</p><p style="font-size:12px;color:var(--muted);margin-top:2px;">Riceverà il riepilogo dopo ogni allenamento</p></div>
+      <input type="text" id="trainer-email" placeholder="trainer@email.com" oninput="saveSetting('trainerEmail',this.value)" style="width:100%;">
+    </div>
+  </div>
+  <button class="btn btn-r" style="background:var(--red);color:#fff;margin-top:8px;" onclick="resetApp()">Reset completo dati</button>
+</div>
+
+<!-- TIMER OVERLAY -->
+<div id="timer-overlay">
+  <p id="timer-label" style="font-family:'Oswald';font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;">Recupero</p>
+  <div id="timer-circle">
+    <svg width="180" height="180" viewBox="0 0 180 180">
+      <circle class="track" cx="90" cy="90" r="80"/>
+      <circle class="prog" id="timer-prog" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+    </svg>
+    <div id="timer-num">0:00</div>
+  </div>
+  <p style="font-size:13px;color:var(--muted);">Tocca per saltare</p>
+  <button onclick="stopTimer()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'Oswald';font-size:13px;padding:10px 24px;cursor:pointer;margin-top:8px;">Salta</button>
 </div>
 
 </div><!-- end #app -->
@@ -369,6 +478,7 @@ function goTo(screen) {
   if (screen === 'home') renderHome();
   if (screen === 'storico') renderCalendario();
   if (screen === 'profilo') renderProfilo();
+  if (screen === 'impostazioni') { renderSettings(); }
 }
 function navClick(tab) { goTo(tab); }
 
@@ -648,7 +758,8 @@ function apriScheda(i) {
         ${ult?`<div style="text-align:right;">
           <p class="oswald" style="font-size:14px;font-weight:600;color:var(--yellow);">${ult.kg>0?ult.kg+' kg':'BW'}</p>
           <p style="font-size:11px;color:var(--muted);">${ult.serie} × ${ult.rip}</p>
-        </div>`:''}</div>`;
+        </div>`:''}</div>
+      ${e.storia&&e.storia.length>=2?`<div id="chart-${e.nome.replace(/\s/g,'_')}" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"></div>`:''}`;
     }).join('');
     return `<div style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -657,6 +768,12 @@ function apriScheda(i) {
       </div>${esHTML}</div>`;
   }).join('');
   goTo('scheda');
+  // Render charts
+  setTimeout(()=>{
+    S.schedaAttiva.giorni.forEach(g=>g.esercizi.forEach(e=>{
+      if(e.storia&&e.storia.length>=2) renderGraficoEsercizio(e.storia,'chart-'+e.nome.replace(/\s/g,'_'));
+    }));
+  },100);
 }
 
 async function showAIScheda() {
@@ -849,7 +966,8 @@ function completaSerie(si){
   es.serieLog[si].completata=true;
   if(es.serieLog.every(s=>s.completata))es.completato=true;
   renderSessione();
-  setTimeout(()=>{const n=document.getElementById(`sc-${si+1}`);if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},100);
+  if(!es.serieLog.every(s=>s.completata)||es.serieLog.length>1) startTimer();
+  setTimeout(()=>{const n=document.getElementById(`sc-${si+1}`);if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},300);
 }
 function annullaSerie(si){
   const es=S.sessione.esercizi[S.sessione.idx];
@@ -933,6 +1051,11 @@ function concludiAllenamento(){
     <p style="font-size:12px;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;">Volume totale</p>
     <p class="oswald" style="font-size:28px;font-weight:700;color:var(--yellow);">${vol.toLocaleString('it-IT')} kg</p>
   </div>`:'';
+  // Prepare share data
+  S._lastSessioneData = {
+    giornoNome: giornoAttivo.nome,
+    esercizi: sessione.esercizi
+  };
   goTo('completato');
 }
 
@@ -1026,8 +1149,216 @@ function renderProfilo(){
     ).join('');
 }
 
+
+// ═══════════════════ SETTINGS ═══════════════════
+let SETTINGS = {
+  timerOn: true,
+  timerDur: 90,
+  notifOn: false,
+  notifDays: 2,
+  trainerEmail: '',
+};
+
+function loadSettings() {
+  const s = localStorage.getItem('cf_settings');
+  if (s) SETTINGS = {...SETTINGS, ...JSON.parse(s)};
+}
+function saveSettings() {
+  localStorage.setItem('cf_settings', JSON.stringify(SETTINGS));
+}
+function saveSetting(k, v) { SETTINGS[k] = v; saveSettings(); }
+
+function toggleSetting(k) {
+  SETTINGS[k] = !SETTINGS[k];
+  saveSettings();
+  renderSettings();
+  if (k === 'notifOn' && SETTINGS.notifOn) requestNotifPermission();
+}
+function setTimerDur(v) { SETTINGS.timerDur = v; saveSettings(); renderSettings(); }
+function setNotifDays(v) { SETTINGS.notifDays = v; saveSettings(); renderSettings(); scheduleNotif(); }
+
+function renderSettings() {
+  const tt = document.getElementById('tog-timer');
+  const tn = document.getElementById('tog-notif');
+  const te = document.getElementById('trainer-email');
+  if (tt) { tt.className = 'toggle' + (SETTINGS.timerOn?' on':''); }
+  if (tn) { tn.className = 'toggle' + (SETTINGS.notifOn?' on':''); }
+  if (te) te.value = SETTINGS.trainerEmail || '';
+  // Seg timer
+  const st = document.getElementById('seg-timer');
+  if (st) st.querySelectorAll('.seg-btn').forEach((b,i) => {
+    const vals = [60,90,120,180,240];
+    b.className = 'seg-btn' + (SETTINGS.timerDur===vals[i]?' active':'');
+  });
+  // Seg notif
+  const sn = document.getElementById('seg-notif');
+  if (sn) sn.querySelectorAll('.seg-btn').forEach((b,i) => {
+    b.className = 'seg-btn' + (SETTINGS.notifDays===(i+1)?' active':'');
+  });
+}
+
+function resetApp() {
+  if (!confirm('Cancellare tutti i dati? Non è reversibile.')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// ═══════════════════ TIMER ═══════════════════
+let timerInterval = null;
+let timerRemaining = 0;
+
+function startTimer() {
+  if (!SETTINGS.timerOn) return;
+  stopTimer(true);
+  timerRemaining = SETTINGS.timerDur;
+  const overlay = document.getElementById('timer-overlay');
+  overlay.style.display = 'flex';
+  overlay.onclick = stopTimer;
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerUI();
+    if (timerRemaining <= 0) {
+      stopTimer();
+      timerDone();
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const tot = SETTINGS.timerDur;
+  const pct = timerRemaining / tot;
+  const circ = 2 * Math.PI * 80;
+  const offset = circ * (1 - pct);
+  const prog = document.getElementById('timer-prog');
+  const num = document.getElementById('timer-num');
+  if (prog) prog.style.strokeDashoffset = offset;
+  if (num) {
+    const m = Math.floor(timerRemaining / 60);
+    const s = timerRemaining % 60;
+    num.textContent = m + ':' + String(s).padStart(2,'0');
+    // Color shift when low
+    prog.style.stroke = timerRemaining <= 10 ? 'var(--red)' : 'var(--yellow)';
+    num.style.color = timerRemaining <= 10 ? 'var(--red)' : 'var(--white)';
+  }
+}
+
+function stopTimer(silent) {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  const overlay = document.getElementById('timer-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function timerDone() {
+  // Vibration
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  // Notification
+  if (SETTINGS.notifOn && Notification.permission === 'granted') {
+    new Notification('COMODO.fit', { body: 'Recupero finito! Sei pronto per la prossima serie 💪', icon: '' });
+  }
+}
+
+// ═══════════════════ NOTIFICHE ═══════════════════
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') scheduleNotif();
+}
+
+function scheduleNotif() {
+  if (!SETTINGS.notifOn || !('Notification' in window) || Notification.permission !== 'granted') return;
+  // Check last workout
+  const lastISO = S.storico.length ? S.storico[S.storico.length-1].dataISO : null;
+  if (!lastISO) return;
+  const last = new Date(lastISO + 'T00:00:00');
+  const now = new Date();
+  const diffDays = Math.floor((now - last) / 86400000);
+  if (diffDays >= SETTINGS.notifDays) {
+    new Notification('COMODO.fit 💪', {
+      body: `Non ti alleni da ${diffDays} ${diffDays===1?'giorno':'giorni'}. È ora di tornare in palestra!`,
+    });
+  }
+}
+
+function checkNotifOnLoad() {
+  if (SETTINGS.notifOn) setTimeout(scheduleNotif, 3000);
+}
+
+// ═══════════════════ GRAFICI PROGRESSIONE ═══════════════════
+function renderGraficoEsercizio(storia, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el || !storia || storia.length < 2) return;
+  const last = storia.slice(-6); // max 6 sessioni
+  const maxKg = Math.max(...last.map(s=>s.kg||0));
+  const firstKg = last[0].kg;
+  const lastKg = last[last.length-1].kg;
+  const pct = firstKg > 0 ? (((lastKg - firstKg) / firstKg) * 100).toFixed(1) : 0;
+  const trend = pct > 0 ? `+${pct}%` : `${pct}%`;
+  const trendColor = pct >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const bars = last.map((s,i) => {
+    const h = maxKg > 0 ? Math.round((s.kg / maxKg) * 60) : 4;
+    const isLast = i === last.length-1;
+    const dt = new Date(s.data+'T00:00:00');
+    const label = `${dt.getDate()}/${dt.getMonth()+1}`;
+    return `<div class="bar-col">
+      <div class="bar-val">${s.kg>0?s.kg:''}</div>
+      <div class="bar" style="height:${h}px;background:${isLast?'var(--yellow)':'var(--surface-high)'};border:1px solid ${isLast?'var(--yellow)':'var(--border)'};"></div>
+      <div class="bar-label">${label}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Progressione</p>
+    <span style="font-size:13px;font-weight:600;font-family:'Oswald';color:${trendColor};">${trend}</span>
+  </div>
+  <div class="bar-wrap">${bars}</div>`;
+}
+
+// ═══════════════════ CONDIVISIONE TRAINER ═══════════════════
+function condividiConTrainer(sessioneData) {
+  const email = SETTINGS.trainerEmail;
+  const p = S.profilo || {};
+  const data = new Date().toLocaleDateString('it-IT');
+  let testo = `COMODO.fit — Riepilogo allenamento\n`;
+  testo += `Atleta: ${p.sesso||''} ${p.eta||''}a ${p.peso||''}kg — Livello: ${p.livello||''}\n`;
+  testo += `Data: ${data}\n`;
+  testo += `Scheda: ${sessioneData.giornoNome}\n\n`;
+  sessioneData.esercizi.forEach(e => {
+    testo += `• ${e.nome}\n`;
+    e.serieLog.forEach((s,i) => {
+      testo += `  Serie ${i+1}: ${s.kg>0?s.kg+' kg':'BW'} × ${s.rip} rip\n`;
+    });
+    if (e.note) testo += `  Note: ${e.note}\n`;
+    testo += '\n';
+  });
+
+  if (email) {
+    const subject = encodeURIComponent(`COMODO.fit — Allenamento ${data}`);
+    const body = encodeURIComponent(testo.replace(/\n/g,'\n'));
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+  } else {
+    // WhatsApp fallback
+    const wa = encodeURIComponent(testo.replace(/\n/g,'\n'));
+    window.open(`https://wa.me/?text=${wa}`);
+  }
+}
+
+
+// ═══════════════════ WELCOME ═══════════════════
+function chiudiWelcome() {
+  const w = document.getElementById('screen-welcome');
+  w.classList.add('fade');
+  setTimeout(() => { w.style.display = 'none'; }, 600);
+  localStorage.setItem('cf_welcomed', '1');
+}
+
 // ═══════════════════ INIT ═══════════════════
+loadSettings();
+if(localStorage.getItem('cf_welcomed')) document.getElementById('screen-welcome').style.display='none';
 initApp();
+checkNotifOnLoad();
 </script>
 </body>
 </html>
