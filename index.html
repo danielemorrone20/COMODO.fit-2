@@ -10,247 +10,327 @@
 <title>COMODO.fit</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #111111;
-    --surface: #1C1C1C;
-    --surface-high: #252525;
-    --border: #2E2E2E;
-    --yellow: #F6B100;
-    --yellow-dim: rgba(246,177,0,0.13);
-    --white: #F5F5F0;
-    --muted: #7A7A7A;
-    --red: #E05252;
-    --green: #52C97A;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Inter', sans-serif; overflow: hidden; }
-  ::-webkit-scrollbar { display: none; }
-
-  #app { max-width: 430px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-
-  /* SCREENS */
-  .screen { flex: 1; overflow-y: auto; padding: 0 16px 90px; display: none; }
-  .screen.active { display: block; }
-
-  /* BOTTOM NAV */
-  #bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; }
-  .nav-btn { flex: 1; background: none; border: none; padding: 12px 0 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .nav-btn .nav-icon { font-size: 20px; color: var(--muted); }
-  .nav-btn .nav-label { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
-  .nav-btn.active .nav-icon, .nav-btn.active .nav-label { color: var(--yellow); font-weight: 600; }
-
-  /* TYPOGRAPHY */
-  .oswald { font-family: 'Oswald', sans-serif; }
-  .yellow { color: var(--yellow); }
-  .muted { color: var(--muted); }
-  .green { color: var(--green); }
-
-  /* CARD */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-  .card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-
-  /* TAG */
-  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-family: 'Inter'; letter-spacing: .05em; text-transform: uppercase; }
-  .tag-yellow { background: var(--yellow-dim); color: var(--yellow); }
-  .tag-muted { background: rgba(122,122,122,.15); color: var(--muted); }
-  .tag-green { background: rgba(82,201,122,.13); color: var(--green); }
-  .tag-red { background: rgba(224,82,82,.13); color: var(--red); }
-  .tag-purple { background: rgba(139,139,255,.13); color: #8B8BFF; }
-
-  /* BUTTONS */
-  .btn { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; border: none; border-radius: 8px; cursor: pointer; padding: 12px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: opacity .15s; }
-  .btn-primary { background: var(--yellow); color: #111; }
-  .btn-ghost { background: transparent; color: var(--yellow); border: 1.5px solid var(--yellow); }
-  .btn-surface { background: var(--surface-high); color: var(--white); }
-  .btn:active { opacity: .75; }
-
-  /* NUM INPUT */
-  .num-input { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
-  .num-input label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-  .num-input .controls { display: flex; align-items: center; background: var(--surface-high); border-radius: 8px; overflow: hidden; }
-  .num-input .controls button { background: none; border: none; color: var(--yellow); font-size: 20px; width: 36px; height: 44px; cursor: pointer; }
-  .num-input .controls span { font-family: 'Oswald'; font-size: 18px; font-weight: 600; min-width: 48px; text-align: center; }
-
-  /* ONBOARDING */
-  #screen-onboarding { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; padding: 24px; }
-  .progress-bar { display: flex; gap: 6px; margin-bottom: 28px; }
-  .progress-seg { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background .3s; }
-  .progress-seg.done { background: var(--yellow); }
-  .onb-question { font-family: 'Oswald'; font-size: 28px; font-weight: 700; line-height: 1.2; color: var(--white); margin-bottom: 24px; }
-  .onb-text-input { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 12px; padding: 0 16px; border: 1px solid var(--border); }
-  .onb-text-input input { flex: 1; background: none; border: none; outline: none; font-family: 'Oswald'; font-size: 28px; font-weight: 600; color: var(--white); padding: 18px 0; }
-  .onb-text-input .unit { color: var(--muted); font-size: 14px; }
-  .onb-option { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all .15s; margin-bottom: 10px; }
-  .onb-option.selected { background: var(--yellow-dim); border-color: var(--yellow); }
-  .onb-option p { font-family: 'Oswald'; font-size: 17px; font-weight: 600; color: var(--white); }
-  .onb-option.selected p { color: var(--yellow); }
-  .onb-option small { font-size: 12px; color: var(--muted); margin-top: 2px; display: block; }
-
-  /* SERIE CARD */
-  .serie-card { border-radius: 10px; padding: 10px 12px; border: 1.5px solid var(--border); background: var(--surface); transition: all .2s; margin-bottom: 8px; }
-  .serie-card.active { background: var(--surface-high); border-color: rgba(246,177,0,.5); }
-  .serie-card.done { background: rgba(82,201,122,.08); border-color: rgba(82,201,122,.4); }
-  .serie-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Oswald'; font-size: 12px; font-weight: 700; }
-
-  /* CALENDAR */
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .cal-day { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: default; border: 1.5px solid transparent; transition: all .15s; }
-  .cal-day.has-workout { cursor: pointer; background: rgba(82,201,122,.1); }
-  .cal-day.today { border-color: var(--yellow); }
-  .cal-day.selected { background: var(--yellow); border-color: var(--yellow); }
-  .cal-day span { font-family: 'Oswald'; font-size: 13px; font-weight: 600; color: var(--muted); }
-  .cal-day.has-workout span { color: var(--green); }
-  .cal-day.today span { color: var(--yellow); }
-  .cal-day.selected span { color: #111; }
-  .cal-day .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--green); margin-top: 1px; }
-  .cal-day.selected .dot { display: none; }
-
-  /* MISC */
-  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .section-title { font-family: 'Oswald'; font-size: 18px; font-weight: 600; color: var(--white); }
-  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--white); font-family: 'Inter'; font-size: 13px; resize: none; outline: none; }
-  .back-btn { background: none; border: none; color: var(--yellow); font-size: 22px; cursor: pointer; padding: 0; }
-  .page-header { display: flex; align-items: center; gap: 12px; padding: 28px 0 20px; }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+:root {
+  --bg:#111111;--surface:#1C1C1C;--surface-high:#252525;--border:#2E2E2E;
+  --yellow:#F6B100;--ydim:rgba(246,177,0,.13);--white:#F5F5F0;
+  --muted:#7A7A7A;--red:#E05252;--green:#52C97A;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;overflow:hidden;}
+::-webkit-scrollbar{display:none;}
+#app{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+.screen{flex:1;overflow-y:auto;padding:0 16px 90px;display:none;}
+.screen.active{display:block;}
+#bottom-nav{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;background:none;border:none;padding:12px 0 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.nav-icon{font-size:20px;color:var(--muted);}
+.nav-label{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;}
+.nav-btn.active .nav-icon,.nav-btn.active .nav-label{color:var(--yellow);font-weight:600;}
+.oswald{font-family:'Oswald',sans-serif;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.card-sm{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:'Inter';letter-spacing:.05em;text-transform:uppercase;}
+.tag-y{background:var(--ydim);color:var(--yellow);}
+.tag-m{background:rgba(122,122,122,.15);color:var(--muted);}
+.tag-g{background:rgba(82,201,122,.13);color:var(--green);}
+.tag-r{background:rgba(224,82,82,.13);color:var(--red);}
+.tag-p{background:rgba(139,139,255,.13);color:#8B8BFF;}
+.btn{font-family:'Oswald',sans-serif;font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;transition:opacity .15s;}
+.btn-p{background:var(--yellow);color:#111;}
+.btn-g{background:transparent;color:var(--yellow);border:1.5px solid var(--yellow);}
+.btn-s{background:var(--surface-high);color:var(--white);}
+.btn:active{opacity:.75;}
+.num-input{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.num-input label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.ni-ctrl{display:flex;align-items:center;background:var(--surface-high);border-radius:8px;overflow:hidden;}
+.ni-ctrl button{background:none;border:none;color:var(--yellow);font-size:20px;width:36px;height:44px;cursor:pointer;}
+.ni-ctrl span{font-family:'Oswald';font-size:18px;font-weight:600;min-width:48px;text-align:center;}
+.serie-card{border-radius:10px;padding:10px 12px;border:1.5px solid var(--border);background:var(--surface);transition:all .2s;margin-bottom:8px;}
+.serie-card.active{background:var(--surface-high);border-color:rgba(246,177,0,.5);}
+.serie-card.done{background:rgba(82,201,122,.08);border-color:rgba(82,201,122,.4);}
+.serie-badge{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Oswald';font-size:12px;font-weight:700;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid transparent;transition:all .15s;}
+.cal-day.hw{cursor:pointer;background:rgba(82,201,122,.1);}
+.cal-day.today{border-color:var(--yellow);}
+.cal-day.sel{background:var(--yellow);}
+.cal-day span{font-family:'Oswald';font-size:13px;font-weight:600;color:var(--muted);}
+.cal-day.hw span{color:var(--green);}
+.cal-day.today span{color:var(--yellow);}
+.cal-day.sel span{color:#111;}
+.cal-dot{width:4px;height:4px;border-radius:50%;background:var(--green);margin-top:1px;}
+.page-header{display:flex;align-items:center;gap:12px;padding:28px 0 20px;}
+.back-btn{background:none;border:none;color:var(--yellow);font-size:22px;cursor:pointer;padding:0;}
+textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--white);font-family:'Inter';font-size:13px;resize:none;outline:none;}
+input[type=text],input[type=number]{background:var(--surface-high);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--white);font-family:'Inter';font-size:14px;outline:none;width:100%;}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.section-title{font-family:'Oswald';font-size:18px;font-weight:600;color:var(--white);}
+.onb-option{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .15s;margin-bottom:10px;}
+.onb-option.sel{background:var(--ydim);border-color:var(--yellow);}
+.onb-option p{font-family:'Oswald';font-size:17px;font-weight:600;color:var(--white);}
+.onb-option.sel p{color:var(--yellow);}
+.onb-option small{font-size:12px;color:var(--muted);margin-top:2px;display:block;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;flex-direction:column;justify-content:flex-end;}
+.modal-box{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 16px 40px;max-height:85vh;overflow-y:auto;}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-high);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;margin:4px;}
+.chip.sel{background:var(--ydim);border-color:var(--yellow);color:var(--yellow);}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;gap:12px;}
+.empty-icon{font-size:48px;}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ═══════════════ ONBOARDING ═══════════════ -->
-  <div id="screen-onboarding">
-    <div class="progress-bar" id="onb-progress"></div>
-    <p class="onb-question" id="onb-title"></p>
-    <div id="onb-input-area"></div>
-    <div style="display:flex;gap:10px;margin-top:28px;">
-      <button class="btn btn-ghost" id="onb-back" style="flex:1;display:none;" onclick="onbBack()">← Indietro</button>
-      <button class="btn btn-primary" id="onb-next" style="flex:2;opacity:.4;pointer-events:none;" onclick="onbNext()">Avanti →</button>
-    </div>
+<!-- ONBOARDING -->
+<div id="screen-onboarding" style="display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:24px;">
+  <div style="display:flex;gap:6px;margin-bottom:28px;" id="onb-prog"></div>
+  <p style="font-family:'Oswald';font-size:28px;font-weight:700;line-height:1.2;margin-bottom:24px;" id="onb-title"></p>
+  <div id="onb-area"></div>
+  <div style="display:flex;gap:10px;margin-top:28px;">
+    <button class="btn btn-g" id="onb-back" style="flex:1;display:none;" onclick="onbBack()">← Indietro</button>
+    <button class="btn btn-p" id="onb-next" style="flex:2;opacity:.4;pointer-events:none;" onclick="onbNext()">Avanti →</button>
   </div>
-
-  <!-- ═══════════════ HOME ═══════════════ -->
-  <div id="screen-home" class="screen">
-    <div style="padding:28px 0 20px;">
-      <p style="font-size:13px;color:var(--muted);" id="home-saluto"></p>
-      <h1 class="oswald" style="font-size:30px;font-weight:700;margin-top:2px;">COMODO<span class="yellow">.fit</span></h1>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;" id="home-tags"></div>
-
-    <div class="section-header">
-      <p class="section-title">Le mie schede</p>
-      <button style="background:none;border:none;color:var(--yellow);font-family:'Oswald';font-size:13px;font-weight:600;letter-spacing:.05em;cursor:pointer;text-transform:uppercase;">+ Nuova</button>
-    </div>
-    <div id="home-schede" style="margin-bottom:28px;display:flex;flex-direction:column;gap:10px;"></div>
-
-    <p class="section-title" style="margin-bottom:12px;">Ultimi allenamenti</p>
-    <div id="home-recenti" style="display:flex;flex-direction:column;gap:10px;"></div>
-  </div>
-
-  <!-- ═══════════════ SCHEDA DETAIL ═══════════════ -->
-  <div id="screen-scheda" class="screen">
-    <div class="page-header">
-      <button class="back-btn" onclick="goTo('home')">‹</button>
-      <div>
-        <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Scheda</p>
-        <h2 class="oswald" style="font-size:24px;font-weight:700;" id="scheda-titolo"></h2>
-      </div>
-    </div>
-    <div id="scheda-giorni"></div>
-  </div>
-
-  <!-- ═══════════════ SESSIONE ═══════════════ -->
-  <div id="screen-sessione" class="screen">
-    <!-- contenuto dinamico -->
-  </div>
-
-  <!-- ═══════════════ COMPLETATO ═══════════════ -->
-  <div id="screen-completato" class="screen" style="display:none;">
-    <div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0;">
-      <div style="font-size:56px;margin-bottom:16px;">🏆</div>
-      <h2 class="oswald yellow" style="font-size:32px;font-weight:700;margin-bottom:8px;">Allenamento completato!</h2>
-      <p class="muted" id="completato-sub" style="font-size:15px;margin-bottom:28px;"></p>
-      <div id="completato-lista" class="card" style="width:100%;margin-bottom:20px;text-align:left;"></div>
-      <div id="completato-volume" style="margin-bottom:24px;width:100%;"></div>
-      <button class="btn btn-primary" onclick="goTo('home')">← Torna alla Home</button>
-    </div>
-  </div>
-
-  <!-- ═══════════════ STORICO ═══════════════ -->
-  <div id="screen-storico" class="screen">
-    <div class="page-header">
-      <button class="back-btn" onclick="goTo('home')">‹</button>
-      <h2 class="oswald" style="font-size:24px;font-weight:700;">Storico</h2>
-    </div>
-    <div class="card" style="margin-bottom:20px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <button onclick="calPrev()" style="background:none;border:none;color:var(--yellow);font-size:20px;cursor:pointer;padding:4px 8px;">‹</button>
-        <p class="oswald" style="font-size:17px;font-weight:600;" id="cal-titolo"></p>
-        <button onclick="calNext()" style="background:none;border:none;color:var(--yellow);font-size:20px;cursor:pointer;padding:4px 8px;">›</button>
-      </div>
-      <div class="cal-grid" id="cal-header" style="margin-bottom:6px;"></div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div><span style="font-size:11px;color:var(--muted);">Allenamento</span></div>
-        <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:2px;border:1.5px solid var(--yellow);"></div><span style="font-size:11px;color:var(--muted);">Oggi</span></div>
-      </div>
-    </div>
-    <div id="cal-detail"></div>
-  </div>
-
-  <!-- ═══════════════ PROFILO ═══════════════ -->
-  <div id="screen-profilo" class="screen">
-    <div class="page-header">
-      <button class="back-btn" onclick="goTo('home')">‹</button>
-      <h2 class="oswald" style="font-size:24px;font-weight:700;">Profilo</h2>
-    </div>
-    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
-      <div id="profilo-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:30px;font-family:'Oswald';font-weight:700;color:#111;"></div>
-      <span id="profilo-tag" class="tag tag-yellow"></span>
-    </div>
-    <div class="card" style="margin-bottom:16px;" id="profilo-items"></div>
-    <div class="card" id="profilo-stats"></div>
-  </div>
-
-  <!-- BOTTOM NAV -->
-  <nav id="bottom-nav">
-    <button class="nav-btn active" data-tab="home" onclick="navClick('home')">
-      <span class="nav-icon">⌂</span>
-      <span class="nav-label">Home</span>
-    </button>
-    <button class="nav-btn" data-tab="storico" onclick="navClick('storico')">
-      <span class="nav-icon">◷</span>
-      <span class="nav-label">Storico</span>
-    </button>
-    <button class="nav-btn" data-tab="profilo" onclick="navClick('profilo')">
-      <span class="nav-icon">◉</span>
-      <span class="nav-label">Profilo</span>
-    </button>
-  </nav>
 </div>
 
+<!-- HOME -->
+<div id="screen-home" class="screen">
+  <div style="padding:28px 0 16px;">
+    <p style="font-size:13px;color:var(--muted);" id="home-saluto"></p>
+    <h1 class="oswald" style="font-size:30px;font-weight:700;margin-top:2px;">COMODO<span style="color:var(--yellow);">.fit</span></h1>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;" id="home-tags"></div>
+  <div class="section-header">
+    <p class="section-title">Le mie schede</p>
+    <button onclick="showNuovaSchedaModal()" style="background:none;border:none;color:var(--yellow);font-family:'Oswald';font-size:13px;font-weight:600;letter-spacing:.05em;cursor:pointer;text-transform:uppercase;">+ Nuova</button>
+  </div>
+  <div id="home-schede" style="margin-bottom:28px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div id="home-recenti-wrap">
+    <p class="section-title" style="margin-bottom:12px;">Ultimi allenamenti</p>
+    <div id="home-recenti"></div>
+  </div>
+</div>
+
+<!-- SCHEDA DETAIL -->
+<div id="screen-scheda" class="screen">
+  <div class="page-header">
+    <button class="back-btn" onclick="goTo('home')">‹</button>
+    <div style="flex:1;">
+      <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Scheda</p>
+      <h2 class="oswald" style="font-size:24px;font-weight:700;" id="scheda-titolo"></h2>
+    </div>
+    <button onclick="showAIScheda()" style="background:var(--ydim);border:1px solid rgba(246,177,0,.3);border-radius:8px;padding:8px 12px;color:var(--yellow);font-size:12px;font-family:'Oswald';font-weight:600;cursor:pointer;letter-spacing:.05em;">✦ AI</button>
+  </div>
+  <div id="ai-scheda-box" style="display:none;background:var(--ydim);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:16px;">
+    <p style="font-size:12px;font-family:'Oswald';font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">✦ AI Coach — Analisi Scheda</p>
+    <div id="ai-scheda-testo"><p style="font-size:13px;color:var(--yellow);font-style:italic;">Analisi in corso…</p></div>
+  </div>
+  <div id="scheda-giorni"></div>
+</div>
+
+<!-- SESSIONE -->
+<div id="screen-sessione" class="screen"></div>
+
+<!-- COMPLETATO -->
+<div id="screen-completato" class="screen">
+  <div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0;">
+    <div style="font-size:56px;margin-bottom:16px;">🏆</div>
+    <h2 class="oswald" style="font-size:32px;font-weight:700;margin-bottom:8px;color:var(--yellow);">Allenamento completato!</h2>
+    <p style="color:var(--muted);font-size:15px;margin-bottom:28px;" id="completato-sub"></p>
+    <div id="completato-lista" class="card" style="width:100%;margin-bottom:20px;text-align:left;"></div>
+    <div id="completato-vol" style="margin-bottom:24px;width:100%;"></div>
+    <button class="btn btn-p" onclick="goTo('home')">← Torna alla Home</button>
+  </div>
+</div>
+
+<!-- STORICO -->
+<div id="screen-storico" class="screen">
+  <div class="page-header">
+    <button class="back-btn" onclick="goTo('home')">‹</button>
+    <h2 class="oswald" style="font-size:24px;font-weight:700;">Storico</h2>
+  </div>
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <button onclick="calPrev()" style="background:none;border:none;color:var(--yellow);font-size:20px;cursor:pointer;padding:4px 8px;">‹</button>
+      <p class="oswald" style="font-size:17px;font-weight:600;" id="cal-titolo"></p>
+      <button onclick="calNext()" style="background:none;border:none;color:var(--yellow);font-size:20px;cursor:pointer;padding:4px 8px;">›</button>
+    </div>
+    <div class="cal-grid" id="cal-header" style="margin-bottom:6px;"></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div><span style="font-size:11px;color:var(--muted);">Allenamento</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:2px;border:1.5px solid var(--yellow);"></div><span style="font-size:11px;color:var(--muted);">Oggi</span></div>
+    </div>
+  </div>
+  <div id="cal-detail"></div>
+</div>
+
+<!-- PROFILO -->
+<div id="screen-profilo" class="screen">
+  <div class="page-header">
+    <button class="back-btn" onclick="goTo('home')">‹</button>
+    <h2 class="oswald" style="font-size:24px;font-weight:700;">Profilo</h2>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
+    <div id="profilo-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:30px;font-family:'Oswald';font-weight:700;color:#111;"></div>
+    <span id="profilo-tag" class="tag tag-y"></span>
+  </div>
+  <div class="card" style="margin-bottom:16px;" id="profilo-items"></div>
+  <div class="card" id="profilo-stats"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" data-tab="home" onclick="navClick('home')"><span class="nav-icon">⌂</span><span class="nav-label">Home</span></button>
+  <button class="nav-btn" data-tab="storico" onclick="navClick('storico')"><span class="nav-icon">◷</span><span class="nav-label">Storico</span></button>
+  <button class="nav-btn" data-tab="profilo" onclick="navClick('profilo')"><span class="nav-icon">◉</span><span class="nav-label">Profilo</span></button>
+</nav>
+
+<!-- MODAL NUOVA SCHEDA -->
+<div id="modal-nuova" class="modal-overlay" style="display:none;" onclick="closeModalNuova(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <h3 class="oswald" style="font-size:22px;font-weight:700;margin-bottom:20px;">Nuova scheda</h3>
+    <div id="modal-nuova-content"></div>
+  </div>
+</div>
+
+<!-- MODAL AI -->
+<div id="modal-ai" class="modal-overlay" style="display:none;" onclick="document.getElementById('modal-ai').style.display='none'">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <p class="oswald" style="font-size:14px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">✦ AI Coach</p>
+    <div id="modal-ai-content"></div>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
 <script>
-// ═══════════════════════════════════════════════════════
-// DATI
-// ═══════════════════════════════════════════════════════
-let STATE = {
+// ═══════════════════ COSTANTI ═══════════════════
+const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const GIORNI_IT = ["Lu","Ma","Me","Gi","Ve","Sa","Do"];
+
+// ═══════════════════ TEMPLATE SCHEDE ═══════════════════
+const TEMPLATE_SCHEDE = {
+  principiante: {
+    nome: "Full Body — Principiante",
+    descrizione: "2 giorni a settimana · Full Body",
+    note: "Riposa almeno 2 giorni tra le sessioni. Priorità alla tecnica.",
+    giorni: [
+      { id:"A", nome:"Giorno A — Full Body", esercizi:[
+        {nome:"Squat con bilanciere",muscolo:"Gambe",note:"Esercizio fondamentale. Scendi fino a quando le cosce sono parallele al pavimento."},
+        {nome:"Panca Piana",muscolo:"Petto",note:"Presa leggermente più larga delle spalle. Tocca il petto con il bilanciere."},
+        {nome:"Trazioni assistite",muscolo:"Schiena",note:"Se non riesci le trazioni, usa il lat machine. Presa prona, tirare verso il mento."},
+        {nome:"Military Press",muscolo:"Spalle",note:"Bilanciere davanti, spinge verticalmente. Non inarcare la schiena."},
+        {nome:"Curl con manubri",muscolo:"Bicipiti",note:"Gomiti fermi. Movimento lento e controllato."},
+        {nome:"Tricipiti ai cavi",muscolo:"Tricipiti",note:"Gomiti vicini al corpo. Estendi completamente il braccio."},
+        {nome:"Plank",muscolo:"Core",note:"Mantieni la posizione. Inizia con 3×20 secondi."},
+      ]},
+      { id:"B", nome:"Giorno B — Full Body", esercizi:[
+        {nome:"Stacco da terra",muscolo:"Posteriore coscia",note:"Schiena dritta, barra vicina alle gambe. Esercizio fondamentale."},
+        {nome:"Rematore con bilanciere",muscolo:"Schiena",note:"Busto inclinato a 45°. Tira il bilanciere verso l'ombelico."},
+        {nome:"Lunge (affondi)",muscolo:"Gambe",note:"Passo lungo, ginocchio anteriore a 90°. Alterna le gambe."},
+        {nome:"Spinte manubri inclinata",muscolo:"Petto",note:"Panca a 30-45°. Variante che lavora la parte alta del petto."},
+        {nome:"Alzate laterali",muscolo:"Spalle",note:"Manubri leggeri. Alzare fino all'altezza delle spalle, gomiti leggermente piegati."},
+        {nome:"Crunch",muscolo:"Addome",note:"Non tirare il collo. Contrai l'addome, non sollevare tutta la schiena."},
+      ]},
+    ]
+  },
+  intermedio: {
+    nome: "Upper/Lower — Intermedio",
+    descrizione: "4 giorni a settimana · Upper/Lower",
+    note: "Schema Upper/Lower. Alterna Upper e Lower con un giorno di riposo tra i blocchi.",
+    giorni: [
+      { id:"A", nome:"Upper A — Spinta + Tiraggio", esercizi:[
+        {nome:"Panca Piana",muscolo:"Petto",note:"Esercizio principale. 4×6-8 rip. Incrementa il peso ogni settimana."},
+        {nome:"Rematore con bilanciere",muscolo:"Schiena",note:"Antagonista alla panca. Mantieni la schiena piatta."},
+        {nome:"Military Press",muscolo:"Spalle",note:"Bilanciere o manubri. 3×8-10 rip."},
+        {nome:"Trazioni",muscolo:"Dorsali",note:"Se possibile con peso aggiunto. 3×6-10 rip."},
+        {nome:"Curl bilanciere",muscolo:"Bicipiti",note:"3×10-12 rip. Movimento controllato."},
+        {nome:"French Press",muscolo:"Tricipiti",note:"3×10-12 rip. Gomiti fermi vicino alla testa."},
+      ]},
+      { id:"B", nome:"Lower A — Squat dominante", esercizi:[
+        {nome:"Squat con bilanciere",muscolo:"Gambe",note:"Esercizio principale. 4×6-8 rip. Tecnica prima del peso."},
+        {nome:"Leg Press",muscolo:"Quadricipiti",note:"3×10-12 rip. Piedi a larghezza spalle, scendi profondo."},
+        {nome:"Leg Curl",muscolo:"Femorali",note:"3×10-12 rip. Isola i femorali, movimento lento."},
+        {nome:"Calf Raises",muscolo:"Polpacci",note:"4×15-20 rip. Vai in massima estensione."},
+        {nome:"Plank laterale",muscolo:"Core",note:"3×30 secondi per lato."},
+      ]},
+      { id:"C", nome:"Upper B — Variante", esercizi:[
+        {nome:"Panca Inclinata",muscolo:"Petto alto",note:"3×8-10 rip. Angolo 30-45°."},
+        {nome:"Lat Machine presa stretta",muscolo:"Schiena",note:"3×10-12 rip. Presa supina, tira verso il mento."},
+        {nome:"Alzate laterali",muscolo:"Spalle",note:"3×12-15 rip. Peso leggero, forma perfetta."},
+        {nome:"Face Pull",muscolo:"Spalle posteriori",note:"3×15 rip. Fondamentale per la salute delle spalle."},
+        {nome:"Martello con manubri",muscolo:"Bicipiti",note:"3×10-12 rip per braccio."},
+        {nome:"Dips alle parallele",muscolo:"Tricipiti",note:"3×10-12 rip. Busto leggermente inclinato."},
+      ]},
+      { id:"D", nome:"Lower B — Stacco dominante", esercizi:[
+        {nome:"Stacco da terra",muscolo:"Catena posteriore",note:"Esercizio principale. 4×4-6 rip. Peso elevato."},
+        {nome:"Romanian Deadlift",muscolo:"Femorali",note:"3×10-12 rip. Schiena dritta, scendi fino a sentire lo stretch."},
+        {nome:"Hack Squat",muscolo:"Quadricipiti",note:"3×10-12 rip. Variante squat con enfasi sui quad."},
+        {nome:"Hip Thrust",muscolo:"Glutei",note:"3×12-15 rip. Contrai i glutei in cima al movimento."},
+        {nome:"Crunch con peso",muscolo:"Addome",note:"3×15 rip. Tieni il peso al petto."},
+      ]},
+    ]
+  },
+  avanzato: {
+    nome: "Push/Pull/Legs — Avanzato",
+    descrizione: "5 giorni a settimana · PPL + Upper",
+    note: "Schema Push/Pull/Legs con ripetizione Upper. Alta frequenza per massa e forza.",
+    giorni: [
+      { id:"A", nome:"Push — Petto, Spalle, Tricipiti", esercizi:[
+        {nome:"Panca Piana con bilanciere",muscolo:"Petto",note:"4×4-6 rip. Carico massimale controllato. Pausa sul petto."},
+        {nome:"Panca Inclinata manubri",muscolo:"Petto alto",note:"3×8-10 rip. Stretch completo in basso."},
+        {nome:"Military Press bilanciere",muscolo:"Spalle anteriori",note:"4×6-8 rip. Esercizio principale spalle."},
+        {nome:"Alzate laterali cavi",muscolo:"Spalle laterali",note:"4×15-20 rip. Cavi per tensione costante. Drop set finale."},
+        {nome:"Croci ai cavi",muscolo:"Petto",note:"3×12-15 rip. Isola il petto. Crossover in basso."},
+        {nome:"Skull Crusher",muscolo:"Tricipiti",note:"3×10-12 rip. Bilanciere EZ. Non aprire i gomiti."},
+        {nome:"Pushdown cavi presa inversa",muscolo:"Tricipiti",note:"3×12-15 rip. Completa l'isolamento del tricipite."},
+      ]},
+      { id:"B", nome:"Pull — Schiena, Bicipiti, Posteriori spalla", esercizi:[
+        {nome:"Trazioni con peso",muscolo:"Dorsali",note:"4×6-8 rip. Aggiungi peso se fai più di 8. Presa prona larga."},
+        {nome:"Rematore bilanciere presa prona",muscolo:"Schiena spessa",note:"4×6-8 rip. Tira verso l'ombelico, schiena parallela."},
+        {nome:"Lat Machine presa supina stretta",muscolo:"Dorsali interni",note:"3×10-12 rip. Senti il lavoro a ogni ripetizione."},
+        {nome:"Face Pull con corda",muscolo:"Posteriori spalla",note:"4×15-20 rip. Fondamentale per la salute rotatori."},
+        {nome:"Curl bilanciere EZ",muscolo:"Bicipiti",note:"4×8-10 rip. Esercizio principale bicipiti."},
+        {nome:"Curl inclinato manubri",muscolo:"Bicipiti",note:"3×10-12 rip. Stretch massimo nella posizione bassa."},
+        {nome:"Scrollate con bilanciere",muscolo:"Trapezio",note:"3×12-15 rip. Contrazione massima in cima."},
+      ]},
+      { id:"C", nome:"Legs — Quadricipiti dominante", esercizi:[
+        {nome:"Squat con bilanciere",muscolo:"Gambe",note:"5×4-6 rip. Carico pesante. Profondità completa."},
+        {nome:"Leg Press 45°",muscolo:"Quadricipiti",note:"4×10-12 rip. Piedi bassi sulla pedana per enfatizzare i quad."},
+        {nome:"Hack Squat",muscolo:"Quadricipiti",note:"3×10-12 rip. Ottimo dopo lo squat per il volume."},
+        {nome:"Leg Extension",muscolo:"Quadricipiti",note:"3×15 rip. Isola il quadricipite. Contrazione al massimo."},
+        {nome:"Leg Curl sdraiato",muscolo:"Femorali",note:"3×12-15 rip. Movimento lento ed esplosivo."},
+        {nome:"Calf Raises in piedi",muscolo:"Gastrocnemio",note:"5×15-20 rip. Pausa di 2 secondi in basso."},
+      ]},
+      { id:"D", nome:"Upper — Forza + Volume", esercizi:[
+        {nome:"Panca Piana",muscolo:"Petto",note:"3×3 rip. Giornata di forza, carico massimale."},
+        {nome:"Military Press",muscolo:"Spalle",note:"3×3 rip. Forza pura. Tecnica impeccabile."},
+        {nome:"Trazioni",muscolo:"Schiena",note:"3×max rip. Bodyweight, fino all'esaurimento."},
+        {nome:"Rematore con manubri",muscolo:"Schiena",note:"4×10-12 per braccio. Unilaterale per correggere asimmetrie."},
+        {nome:"Alzate laterali",muscolo:"Spalle",note:"4×15-20 rip. Volume alto. Peso moderato."},
+        {nome:"Superserie: Curl + Dips",muscolo:"Braccia",note:"3×10+10. Superserie bicipiti e tricipiti senza pausa."},
+      ]},
+      { id:"E", nome:"Legs — Stacco dominante + Glutei", esercizi:[
+        {nome:"Stacco da terra",muscolo:"Catena posteriore",note:"5×3-5 rip. Carico massimale. Re degli esercizi."},
+        {nome:"Romanian Deadlift",muscolo:"Femorali",note:"4×8-10 rip. Schiena neutra. Scendi fino a sentire lo stretch."},
+        {nome:"Hip Thrust bilanciere",muscolo:"Glutei",note:"4×10-12 rip. Contrazione esplosiva. Pausa in cima."},
+        {nome:"Bulgarian Split Squat",muscolo:"Gambe unilaterale",note:"3×10-12 per gamba. Ottimo per correggere asimmetrie."},
+        {nome:"Leg Curl seduto",muscolo:"Femorali",note:"3×12-15 rip. Diverso angolo rispetto al sdraiato."},
+        {nome:"Calf Raises seduto",muscolo:"Soleo",note:"4×20 rip. Il soleo risponde bene ai carichi alti."},
+        {nome:"Ab Wheel",muscolo:"Core",note:"3×10-15 rip. Esercizio avanzato per il core. Controllato."},
+      ]},
+    ]
+  }
+};
+
+// ═══════════════════ STATE ═══════════════════
+let S = {
   profilo: null,
-  schede: [
-    {
-      id: 1, nome: "Full Body A/B", descrizione: "3 giorni a settimana",
-      giorni: [
-        { id:"A", nome:"Giorno A", esercizi:[
-          { id:1, nome:"Panca Piana", muscolo:"Petto", storia:[{data:"2025-06-10",kg:60,serie:3,rip:8},{data:"2025-06-14",kg:62.5,serie:3,rip:8},{data:"2025-06-18",kg:62.5,serie:3,rip:10}]},
-          { id:2, nome:"Squat", muscolo:"Gambe", storia:[{data:"2025-06-10",kg:80,serie:3,rip:8},{data:"2025-06-14",kg:82.5,serie:3,rip:8},{data:"2025-06-18",kg:82.5,serie:4,rip:8}]},
-          { id:3, nome:"Lat Machine", muscolo:"Schiena", storia:[{data:"2025-06-10",kg:50,serie:3,rip:10},{data:"2025-06-14",kg:52.5,serie:3,rip:10},{data:"2025-06-18",kg:55,serie:3,rip:10}]},
-        ]},
-        { id:"B", nome:"Giorno B", esercizi:[
-          { id:4, nome:"Military Press", muscolo:"Spalle", storia:[{data:"2025-06-11",kg:40,serie:3,rip:8},{data:"2025-06-15",kg:42.5,serie:3,rip:8},{data:"2025-06-19",kg:42.5,serie:3,rip:10}]},
-          { id:5, nome:"Stacchi", muscolo:"Posteriore", storia:[{data:"2025-06-11",kg:100,serie:3,rip:5},{data:"2025-06-15",kg:102.5,serie:3,rip:5},{data:"2025-06-19",kg:105,serie:3,rip:5}]},
-          { id:6, nome:"Trazioni", muscolo:"Dorsali", storia:[{data:"2025-06-11",kg:0,serie:3,rip:6},{data:"2025-06-15",kg:0,serie:3,rip:8},{data:"2025-06-19",kg:0,serie:3,rip:10}]},
-        ]},
-      ]
-    }
-  ],
+  schede: [],
+  storico: [], // [{dataISO, schedaId, giornoId, giornoNome, esercizi:[{nome,serieLog:[{kg,rip}]}]}]
   sessione: null,
   schedaAttiva: null,
   giornoAttivo: null,
@@ -259,29 +339,24 @@ let STATE = {
   calGiornoSel: null,
 };
 
-const ALLENAMENTI_CAL = [
-  {dataISO:"2025-06-19",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:42.5,serie:3,rip:10},{nome:"Stacchi",kg:105,serie:3,rip:5},{nome:"Trazioni",kg:0,serie:3,rip:10}]},
-  {dataISO:"2025-06-18",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:62.5,serie:3,rip:10},{nome:"Squat",kg:82.5,serie:4,rip:8},{nome:"Lat Machine",kg:55,serie:3,rip:10}]},
-  {dataISO:"2025-06-15",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:42.5,serie:3,rip:8},{nome:"Stacchi",kg:102.5,serie:3,rip:5},{nome:"Trazioni",kg:0,serie:3,rip:8}]},
-  {dataISO:"2025-06-14",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:62.5,serie:3,rip:8},{nome:"Squat",kg:82.5,serie:3,rip:8},{nome:"Lat Machine",kg:52.5,serie:3,rip:10}]},
-  {dataISO:"2025-06-11",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:40,serie:3,rip:8},{nome:"Stacchi",kg:100,serie:3,rip:5},{nome:"Trazioni",kg:0,serie:3,rip:6}]},
-  {dataISO:"2025-06-10",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:60,serie:3,rip:8},{nome:"Squat",kg:80,serie:3,rip:8},{nome:"Lat Machine",kg:50,serie:3,rip:10}]},
-  {dataISO:"2025-06-07",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:40,serie:3,rip:6},{nome:"Stacchi",kg:97.5,serie:3,rip:5},{nome:"Trazioni",kg:0,serie:3,rip:5}]},
-  {dataISO:"2025-06-04",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:57.5,serie:3,rip:10},{nome:"Squat",kg:77.5,serie:3,rip:8},{nome:"Lat Machine",kg:47.5,serie:3,rip:10}]},
-  {dataISO:"2025-06-02",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:37.5,serie:3,rip:10},{nome:"Stacchi",kg:95,serie:3,rip:5}]},
-  {dataISO:"2025-05-29",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:57.5,serie:3,rip:8},{nome:"Squat",kg:75,serie:3,rip:8}]},
-  {dataISO:"2025-05-27",giorno:"Giorno B",esercizi:[{nome:"Military Press",kg:37.5,serie:3,rip:8},{nome:"Stacchi",kg:92.5,serie:3,rip:5}]},
-  {dataISO:"2025-05-24",giorno:"Giorno A",esercizi:[{nome:"Panca Piana",kg:55,serie:3,rip:10},{nome:"Squat",kg:72.5,serie:3,rip:8}]},
-];
-const calMap = {};
-ALLENAMENTI_CAL.forEach(a => calMap[a.dataISO] = a);
+function salvaStorage() {
+  localStorage.setItem('cf_profilo', JSON.stringify(S.profilo));
+  localStorage.setItem('cf_schede', JSON.stringify(S.schede));
+  localStorage.setItem('cf_storico', JSON.stringify(S.storico));
+}
 
-const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
-const GIORNI = ["Lu","Ma","Me","Gi","Ve","Sa","Do"];
+function caricaStorage() {
+  try {
+    const p = localStorage.getItem('cf_profilo');
+    const sc = localStorage.getItem('cf_schede');
+    const st = localStorage.getItem('cf_storico');
+    if (p) S.profilo = JSON.parse(p);
+    if (sc) S.schede = JSON.parse(sc);
+    if (st) S.storico = JSON.parse(st);
+  } catch(e) {}
+}
 
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ NAVIGATION ═══════════════════
 function goTo(screen) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
@@ -289,215 +364,363 @@ function goTo(screen) {
   const noNav = ['sessione','completato'];
   document.getElementById('bottom-nav').style.display = noNav.includes(screen) ? 'none' : 'flex';
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const navMap = {home:'home',storico:'storico',profilo:'profilo'};
-  if (navMap[screen]) document.querySelector(`[data-tab="${navMap[screen]}"]`)?.classList.add('active');
+  const navTabs = {home:'home',storico:'storico',profilo:'profilo'};
+  if (navTabs[screen]) document.querySelector(`[data-tab="${navTabs[screen]}"]`)?.classList.add('active');
   if (screen === 'home') renderHome();
   if (screen === 'storico') renderCalendario();
   if (screen === 'profilo') renderProfilo();
 }
+function navClick(tab) { goTo(tab); }
 
-function navClick(tab) {
-  goTo(tab);
-}
-
-// ═══════════════════════════════════════════════════════
-// ONBOARDING
-// ═══════════════════════════════════════════════════════
-const ONB_STEPS = [
-  { titolo: "Quanti anni hai?", campo: "eta", tipo: "number", placeholder: "es. 28", unit: "anni" },
-  { titolo: "Il tuo sesso", campo: "sesso", tipo: "select", opzioni: ["Uomo","Donna","Altro"] },
-  { titolo: "Quanto pesi?", campo: "peso", tipo: "number", placeholder: "es. 80", unit: "kg" },
-  { titolo: "Quanto sei alto?", campo: "altezza", tipo: "number", placeholder: "es. 178", unit: "cm" },
-  { titolo: "Livello di allenamento", campo: "livello", tipo: "select",
-    opzioni: ["Principiante","Intermedio","Avanzato"],
-    desc: { Principiante:"Meno di 1 anno di allenamento costante", Intermedio:"1–3 anni, conosci i fondamentali", Avanzato:"3+ anni, progressione lenta" }
-  },
+// ═══════════════════ ONBOARDING ═══════════════════
+const ONB = [
+  {titolo:"Quanti anni hai?", campo:"eta", tipo:"number", placeholder:"es. 28", unit:"anni"},
+  {titolo:"Il tuo sesso", campo:"sesso", tipo:"select", opzioni:["Uomo","Donna","Altro"]},
+  {titolo:"Quanto pesi?", campo:"peso", tipo:"number", placeholder:"es. 80", unit:"kg"},
+  {titolo:"Quanto sei alto?", campo:"altezza", tipo:"number", placeholder:"es. 178", unit:"cm"},
+  {titolo:"Livello di allenamento", campo:"livello", tipo:"select",
+    opzioni:["Principiante","Intermedio","Avanzato"],
+    desc:{Principiante:"Meno di 1 anno di allenamento costante",Intermedio:"1–3 anni, conosci i fondamentali",Avanzato:"3+ anni, progressione lenta"}},
 ];
-let onbStep = 0;
-let onbData = {};
+let onbStep = 0, onbData = {};
 
-function initOnboarding() {
-  const saved = localStorage.getItem('comodo_profilo');
-  if (saved) {
-    STATE.profilo = JSON.parse(saved);
+function initApp() {
+  caricaStorage();
+  if (S.profilo) {
     document.getElementById('screen-onboarding').style.display = 'none';
     goTo('home');
-    return;
+  } else {
+    renderOnbStep();
   }
-  renderOnbStep();
 }
 
 function renderOnbStep() {
-  const s = ONB_STEPS[onbStep];
-  // progress
-  const prog = document.getElementById('onb-progress');
-  prog.innerHTML = ONB_STEPS.map((_,i) => `<div class="progress-seg ${i<=onbStep?'done':''}"></div>`).join('');
+  const s = ONB[onbStep];
+  document.getElementById('onb-prog').innerHTML = ONB.map((_,i)=>`<div style="flex:1;height:3px;border-radius:2px;background:${i<=onbStep?'var(--yellow)':'var(--border)'};transition:background .3s;"></div>`).join('');
   document.getElementById('onb-title').textContent = s.titolo;
   document.getElementById('onb-back').style.display = onbStep > 0 ? 'flex' : 'none';
-  const nextBtn = document.getElementById('onb-next');
-  nextBtn.textContent = onbStep < ONB_STEPS.length-1 ? 'Avanti →' : 'Inizia →';
-
-  const area = document.getElementById('onb-input-area');
+  document.getElementById('onb-next').textContent = onbStep < ONB.length-1 ? 'Avanti →' : 'Inizia →';
+  const area = document.getElementById('onb-area');
   if (s.tipo === 'number') {
-    area.innerHTML = `<div class="onb-text-input"><input type="number" id="onb-val" placeholder="${s.placeholder}" oninput="onbCheckVal()" value="${onbData[s.campo]||''}"><span class="unit">${s.unit}</span></div>`;
-    setTimeout(() => document.getElementById('onb-val')?.focus(), 100);
+    area.innerHTML = `<div style="display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:12px;padding:0 16px;border:1px solid var(--border);">
+      <input type="number" id="onb-val" placeholder="${s.placeholder}" oninput="onbCheck()" value="${onbData[s.campo]||''}" style="flex:1;background:none;border:none;outline:none;font-family:'Oswald';font-size:28px;font-weight:600;color:var(--white);padding:18px 0;">
+      <span style="color:var(--muted);font-size:14px;">${s.unit}</span></div>`;
+    setTimeout(()=>document.getElementById('onb-val')?.focus(),100);
   } else {
-    area.innerHTML = s.opzioni.map(o =>
-      `<div class="onb-option ${onbData[s.campo]===o?'selected':''}" onclick="onbSelect('${o}')">`+
-      `<p>${o}</p>${s.desc?`<small>${s.desc[o]}</small>`:''}</div>`
-    ).join('');
+    area.innerHTML = s.opzioni.map(o=>`<div class="onb-option ${onbData[s.campo]===o?'sel':''}" onclick="onbSel('${o}')"><p>${o}</p>${s.desc?`<small>${s.desc[o]}</small>`:''}</div>`).join('');
   }
-  onbCheckVal();
+  onbCheck();
 }
-
-function onbCheckVal() {
-  const s = ONB_STEPS[onbStep];
-  const val = s.tipo === 'number' ? document.getElementById('onb-val')?.value : onbData[s.campo];
+function onbCheck() {
+  const s = ONB[onbStep];
+  const val = s.tipo==='number' ? document.getElementById('onb-val')?.value : onbData[s.campo];
   const ok = val && val !== '';
   const btn = document.getElementById('onb-next');
   btn.style.opacity = ok ? '1' : '0.4';
   btn.style.pointerEvents = ok ? 'auto' : 'none';
 }
-
-function onbSelect(val) {
-  onbData[ONB_STEPS[onbStep].campo] = val;
-  renderOnbStep();
-}
-
+function onbSel(val) { onbData[ONB[onbStep].campo] = val; renderOnbStep(); }
 function onbBack() { if (onbStep > 0) { onbStep--; renderOnbStep(); } }
-
 function onbNext() {
-  const s = ONB_STEPS[onbStep];
+  const s = ONB[onbStep];
   if (s.tipo === 'number') onbData[s.campo] = document.getElementById('onb-val').value;
-  if (onbStep < ONB_STEPS.length - 1) { onbStep++; renderOnbStep(); }
+  if (onbStep < ONB.length-1) { onbStep++; renderOnbStep(); }
   else {
-    STATE.profilo = { ...onbData };
-    localStorage.setItem('comodo_profilo', JSON.stringify(STATE.profilo));
+    S.profilo = {...onbData};
+    salvaStorage();
     document.getElementById('screen-onboarding').style.display = 'none';
     goTo('home');
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// HOME
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ HOME ═══════════════════
 function renderHome() {
   const ora = new Date().getHours();
-  const saluto = ora < 12 ? 'Buongiorno 👋' : ora < 18 ? 'Buon pomeriggio 👋' : 'Buonasera 👋';
-  document.getElementById('home-saluto').textContent = saluto;
-
-  const p = STATE.profilo || {};
+  document.getElementById('home-saluto').textContent = ora<12?'Buongiorno 👋':ora<18?'Buon pomeriggio 👋':'Buonasera 👋';
+  const p = S.profilo||{};
   document.getElementById('home-tags').innerHTML =
-    `<span class="tag tag-yellow">${p.livello||'Intermedio'}</span>` +
-    `<span class="tag tag-muted">${p.peso||'—'} kg</span>` +
-    `<span class="tag tag-green">Attivo</span>`;
+    `<span class="tag tag-y">${p.livello||'Intermedio'}</span>` +
+    `<span class="tag tag-m">${p.peso||'—'} kg</span>` +
+    `<span class="tag tag-g">Attivo</span>`;
 
-  document.getElementById('home-schede').innerHTML = STATE.schede.map(s =>
-    `<div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="apriScheda(${s.id})">
-      <div>
-        <p class="oswald" style="font-size:18px;font-weight:600;">${s.nome}</p>
-        <p style="font-size:13px;color:var(--muted);margin-top:2px;">${s.descrizione} · ${s.giorni.length} giorni</p>
-      </div>
-      <span class="yellow" style="font-size:20px;">›</span>
-    </div>`
-  ).join('');
-
-  const recenti = ALLENAMENTI_CAL.slice(0,3);
-  document.getElementById('home-recenti').innerHTML = recenti.map(a => {
-    const dt = new Date(a.dataISO+'T00:00:00');
-    const data = `${dt.getDate()} ${MESI[dt.getMonth()]}`;
-    return `<div class="card">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-        <span class="oswald yellow" style="font-size:15px;font-weight:600;">${data}</span>
-        <span class="tag tag-yellow">${a.giorno}</span>
-      </div>
-      ${a.esercizi.map(e=>`<p style="font-size:13px;color:var(--muted);line-height:1.8;">· ${e.nome} ${e.kg>0?e.kg+' kg':'BW'} × ${e.rip} × ${e.serie}</p>`).join('')}
+  // Schede
+  if (S.schede.length === 0) {
+    document.getElementById('home-schede').innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p class="oswald" style="font-size:18px;font-weight:600;">Nessuna scheda</p>
+      <p style="font-size:13px;color:var(--muted);">Crea la tua prima scheda o scegli un programma pronto</p>
+      <button class="btn btn-p" style="margin-top:8px;" onclick="showNuovaSchedaModal()">+ Crea scheda</button>
     </div>`;
-  }).join('');
+  } else {
+    document.getElementById('home-schede').innerHTML = S.schede.map((s,i)=>
+      `<div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="apriScheda(${i})">
+        <div>
+          <p class="oswald" style="font-size:18px;font-weight:600;">${s.nome}</p>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px;">${s.descrizione||''} · ${s.giorni.length} giorni</p>
+        </div>
+        <span style="color:var(--yellow);font-size:20px;">›</span>
+      </div>`
+    ).join('');
+  }
+
+  // Recenti
+  const recenti = S.storico.slice(-3).reverse();
+  if (recenti.length === 0) {
+    document.getElementById('home-recenti-wrap').innerHTML = '';
+  } else {
+    document.getElementById('home-recenti-wrap').innerHTML = `<p class="section-title" style="margin-bottom:12px;">Ultimi allenamenti</p><div id="home-recenti"></div>`;
+    document.getElementById('home-recenti').innerHTML = recenti.map(a=>{
+      const dt = new Date(a.dataISO+'T00:00:00');
+      const data = `${dt.getDate()} ${MESI[dt.getMonth()]}`;
+      return `<div class="card" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span class="oswald" style="font-size:15px;font-weight:600;color:var(--yellow);">${data}</span>
+          <span class="tag tag-y">${a.giornoNome||''}</span>
+        </div>
+        ${a.esercizi.map(e=>{
+          const kg = e.serieLog&&e.serieLog.length?e.serieLog[0].kg:0;
+          const rip = e.serieLog&&e.serieLog.length?e.serieLog[0].rip:0;
+          return `<p style="font-size:13px;color:var(--muted);line-height:1.8;">· ${e.nome} ${kg>0?kg+' kg':'BW'} × ${rip}</p>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  }
 }
 
-// ═══════════════════════════════════════════════════════
-// SCHEDA DETAIL
-// ═══════════════════════════════════════════════════════
-function apriScheda(id) {
-  STATE.schedaAttiva = STATE.schede.find(s => s.id === id);
-  document.getElementById('scheda-titolo').textContent = STATE.schedaAttiva.nome;
-  document.getElementById('scheda-giorni').innerHTML = STATE.schedaAttiva.giorni.map(g => {
-    const esHTML = g.esercizi.map(e => {
-      const ult = e.storia[e.storia.length-1];
+// ═══════════════════ MODAL NUOVA SCHEDA ═══════════════════
+let nuovaSchedaStep = 0; // 0=tipo, 1=template, 2=custom
+let nuovaSchedaData = {};
+
+function showNuovaSchedaModal() {
+  nuovaSchedaStep = 0;
+  nuovaSchedaData = {};
+  document.getElementById('modal-nuova').style.display = 'flex';
+  renderNuovaSchedaModal();
+}
+function closeModalNuova(e) {
+  if (!e || e.target === document.getElementById('modal-nuova'))
+    document.getElementById('modal-nuova').style.display = 'none';
+}
+
+function renderNuovaSchedaModal() {
+  const c = document.getElementById('modal-nuova-content');
+  if (nuovaSchedaStep === 0) {
+    c.innerHTML = `
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Scegli come vuoi creare la scheda</p>
+      <div class="onb-option" onclick="nuovaSchedaStep=1;renderNuovaSchedaModal()">
+        <p>📋 Usa un programma pronto</p>
+        <small>Principiante, Intermedio o Avanzato — programmi studiati</small>
+      </div>
+      <div class="onb-option" onclick="nuovaSchedaStep=2;renderNuovaSchedaModal()">
+        <p>✏️ Crea da zero</p>
+        <small>Scegli tu i giorni e gli esercizi</small>
+      </div>`;
+  } else if (nuovaSchedaStep === 1) {
+    c.innerHTML = `
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Scegli il livello</p>
+      ${['principiante','intermedio','avanzato'].map(lv=>{
+        const t = TEMPLATE_SCHEDE[lv];
+        return `<div class="onb-option" onclick="aggiungiTemplate('${lv}')">
+          <p>${t.nome}</p>
+          <small>${t.descrizione}</small>
+        </div>`;
+      }).join('')}
+      <button class="btn btn-s" style="margin-top:8px;" onclick="nuovaSchedaStep=0;renderNuovaSchedaModal()">← Indietro</button>`;
+  } else if (nuovaSchedaStep === 2) {
+    if (!nuovaSchedaData.giorni) nuovaSchedaData.giorni = [{id:'A',nome:'Giorno A',esercizi:[]}];
+    c.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Nome scheda</label>
+        <input type="text" id="ns-nome" placeholder="es. Mia Scheda" value="${nuovaSchedaData.nome||''}" oninput="nuovaSchedaData.nome=this.value">
+      </div>
+      ${nuovaSchedaData.giorni.map((g,gi)=>`
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <input type="text" value="${g.nome}" oninput="nuovaSchedaData.giorni[${gi}].nome=this.value" style="font-family:'Oswald';font-size:15px;font-weight:600;background:none;border:none;outline:none;color:var(--yellow);padding:0;width:auto;">
+            ${nuovaSchedaData.giorni.length>1?`<button onclick="rimuoviGiorno(${gi})" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;">Rimuovi</button>`:''}
+          </div>
+          <div id="es-list-${gi}">
+            ${g.esercizi.map((e,ei)=>`
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:13px;flex:1;">${e.nome}</span>
+                <span style="font-size:11px;color:var(--muted);">${e.muscolo}</span>
+                <button onclick="rimuoviEsercizio(${gi},${ei})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;">×</button>
+              </div>`).join('')}
+          </div>
+          <button onclick="showAddEsercizio(${gi})" style="margin-top:10px;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-family:'Inter';padding:8px;cursor:pointer;width:100%;">+ Aggiungi esercizio</button>
+        </div>`).join('')}
+      <button onclick="aggiungiGiorno()" class="btn btn-s" style="margin-bottom:12px;">+ Aggiungi giorno</button>
+      <button onclick="salvaSchedaCustom()" class="btn btn-p">Salva scheda</button>
+      <button class="btn btn-s" style="margin-top:8px;" onclick="nuovaSchedaStep=0;renderNuovaSchedaModal()">← Indietro</button>`;
+  }
+}
+
+function aggiungiTemplate(lv) {
+  const t = JSON.parse(JSON.stringify(TEMPLATE_SCHEDE[lv]));
+  // Aggiungi storia vuota a ogni esercizio
+  t.giorni.forEach(g => g.esercizi.forEach(e => { e.storia = []; e.id = Date.now() + Math.random(); }));
+  S.schede.push(t);
+  salvaStorage();
+  document.getElementById('modal-nuova').style.display = 'none';
+  renderHome();
+}
+
+function aggiungiGiorno() {
+  const ids = ['A','B','C','D','E','F','G'];
+  const i = nuovaSchedaData.giorni.length;
+  nuovaSchedaData.giorni.push({id:ids[i]||String(i+1), nome:`Giorno ${ids[i]||i+1}`, esercizi:[]});
+  renderNuovaSchedaModal();
+}
+function rimuoviGiorno(gi) {
+  nuovaSchedaData.giorni.splice(gi,1);
+  renderNuovaSchedaModal();
+}
+function rimuoviEsercizio(gi,ei) {
+  nuovaSchedaData.giorni[gi].esercizi.splice(ei,1);
+  renderNuovaSchedaModal();
+}
+function salvaSchedaCustom() {
+  const nome = nuovaSchedaData.nome || 'La mia scheda';
+  S.schede.push({nome, descrizione:'Scheda personalizzata', giorni: nuovaSchedaData.giorni});
+  salvaStorage();
+  document.getElementById('modal-nuova').style.display = 'none';
+  renderHome();
+}
+
+// Add esercizio modal
+let addEsGiornoIdx = 0;
+const ESERCIZI_PRESET = {
+  "Petto":["Panca Piana","Panca Inclinata","Panca Declinata","Croci ai cavi","Dips","Spinte manubri","Push-up"],
+  "Schiena":["Trazioni","Lat Machine","Rematore bilanciere","Rematore manubri","Pulley basso","Stacco da terra","Face Pull"],
+  "Spalle":["Military Press","Alzate laterali","Alzate frontali","Scrollate","Arnold Press","Push Press"],
+  "Gambe":["Squat","Leg Press","Stacco da terra","Romanian Deadlift","Leg Extension","Leg Curl","Hip Thrust","Affondi","Bulgarian Split Squat","Calf Raises"],
+  "Bicipiti":["Curl bilanciere","Curl manubri","Curl a martello","Curl ai cavi","Curl con bilanciere EZ"],
+  "Tricipiti":["Dips","French Press","Skull Crusher","Pushdown cavi","Tricipiti ai cavi presa inversa","Kickback"],
+  "Core":["Plank","Crunch","Ab Wheel","Crunch con peso","Leg Raise","Russian Twist"],
+};
+
+function showAddEsercizio(gi) {
+  addEsGiornoIdx = gi;
+  const modal = document.getElementById('modal-ai');
+  document.getElementById('modal-ai-content').innerHTML = `
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Scegli un esercizio o scrivi il tuo</p>
+    <input type="text" id="es-custom" placeholder="Scrivi nome esercizio…" style="margin-bottom:12px;">
+    <input type="text" id="es-muscolo" placeholder="Gruppo muscolare (es. Petto)" style="margin-bottom:16px;">
+    ${Object.entries(ESERCIZI_PRESET).map(([cat,list])=>`
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:12px;">${cat}</p>
+      <div style="display:flex;flex-wrap:wrap;">
+        ${list.map(e=>`<span class="chip" onclick="selEsercizioPreset('${e}','${cat}')">${e}</span>`).join('')}
+      </div>`).join('')}
+    <button class="btn btn-p" style="margin-top:20px;" onclick="aggiungiEsercizioCustom()">Aggiungi</button>`;
+  modal.style.display = 'flex';
+}
+
+function selEsercizioPreset(nome, cat) {
+  document.getElementById('es-custom').value = nome;
+  document.getElementById('es-muscolo').value = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  event.target.classList.add('sel');
+}
+
+function aggiungiEsercizioCustom() {
+  const nome = document.getElementById('es-custom').value.trim();
+  const muscolo = document.getElementById('es-muscolo').value.trim();
+  if (!nome) return;
+  nuovaSchedaData.giorni[addEsGiornoIdx].esercizi.push({nome, muscolo:muscolo||'—', storia:[], id:Date.now()+Math.random()});
+  document.getElementById('modal-ai').style.display = 'none';
+  renderNuovaSchedaModal();
+}
+
+// ═══════════════════ SCHEDA DETAIL ═══════════════════
+function apriScheda(i) {
+  S.schedaAttiva = S.schede[i];
+  S.schedaAttivaIdx = i;
+  document.getElementById('scheda-titolo').textContent = S.schedaAttiva.nome;
+  document.getElementById('ai-scheda-box').style.display = 'none';
+  document.getElementById('scheda-giorni').innerHTML = S.schedaAttiva.giorni.map((g,gi)=>{
+    const esHTML = g.esercizi.map(e=>{
+      const ult = e.storia && e.storia.length ? e.storia[e.storia.length-1] : null;
       return `<div class="card-sm" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div>
           <p class="oswald" style="font-size:15px;font-weight:600;">${e.nome}</p>
-          <p style="font-size:12px;color:var(--muted);margin-top:2px;">${e.muscolo}</p>
+          <p style="font-size:12px;color:var(--muted);margin-top:2px;">${e.muscolo||''}</p>
         </div>
         ${ult?`<div style="text-align:right;">
-          <p class="oswald yellow" style="font-size:14px;font-weight:600;">${ult.kg>0?ult.kg+' kg':'BW'}</p>
+          <p class="oswald" style="font-size:14px;font-weight:600;color:var(--yellow);">${ult.kg>0?ult.kg+' kg':'BW'}</p>
           <p style="font-size:11px;color:var(--muted);">${ult.serie} × ${ult.rip}</p>
-        </div>`:''}
-      </div>`;
+        </div>`:''}</div>`;
     }).join('');
     return `<div style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <p class="oswald yellow" style="font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">${g.nome}</p>
-        <button class="btn btn-ghost" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione('${g.id}')">Allena →</button>
-      </div>
-      ${esHTML}
-    </div>`;
+        <p class="oswald" style="font-size:15px;font-weight:600;color:var(--yellow);text-transform:uppercase;letter-spacing:.06em;">${g.nome}</p>
+        <button class="btn btn-g" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione(${gi})">Allena →</button>
+      </div>${esHTML}</div>`;
   }).join('');
   goTo('scheda');
 }
 
-// ═══════════════════════════════════════════════════════
-// AI PROGRESSION ENGINE
-// ═══════════════════════════════════════════════════════
+async function showAIScheda() {
+  const box = document.getElementById('ai-scheda-box');
+  const testo = document.getElementById('ai-scheda-testo');
+  box.style.display = 'block';
+  testo.innerHTML = '<p style="font-size:13px;color:var(--yellow);font-style:italic;">Analisi in corso…</p>';
+  const p = S.profilo||{};
+  const prompt = `Sei un personal trainer esperto. Analizza questa scheda di allenamento:
+Nome: ${S.schedaAttiva.nome}
+Livello utente: ${p.livello||'Intermedio'}, ${p.eta||'—'} anni, ${p.peso||'—'} kg.
+Giorni: ${S.schedaAttiva.giorni.map(g=>g.nome+': '+g.esercizi.map(e=>e.nome).join(', ')).join(' | ')}
+Dai una valutazione breve (3-4 frasi) sulla qualità del programma, bilancio muscolare, e 1-2 suggerimenti pratici. Italiano, tono da coach diretto.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const txt = data.content?.find(b=>b.type==='text')?.text||'Scheda ben strutturata.';
+    testo.innerHTML = `<p style="font-size:13px;color:var(--white);line-height:1.6;">${txt}</p>`;
+  } catch {
+    testo.innerHTML = '<p style="font-size:13px;color:var(--muted);">Connessione non disponibile.</p>';
+  }
+}
+
+// ═══════════════════ AI PROGRESSION ═══════════════════
 function calcolaProgressione(storia, livello='intermedio') {
   if (!storia || !storia.length) return null;
   const ult = storia[storia.length-1];
-  const { kg, serie, rip } = ult;
-  const inc = kg >= 40 ? 2.5 : 1.25;
+  const {kg,serie,rip} = ult;
+  const inc = kg>=40?2.5:1.25;
   const lv = (livello||'').toLowerCase();
-
-  if (storia.length >= 3) {
+  if (storia.length>=3) {
     const u3 = storia.slice(-3);
-    if (u3.every(s=>s.kg===u3[0].kg && s.serie===u3[0].serie && s.rip===u3[0].rip)) {
-      return { tipo:'deload', kg:+(kg*.9).toFixed(2), serie, rip,
-        consiglio:`Plateau rilevato. Fai un deload: riduci a ${+(kg*.9).toFixed(1)} kg questa settimana, poi tornerai più forte.`, emoji:'🔄' };
-    }
+    if (u3.every(s=>s.kg===u3[0].kg&&s.serie===u3[0].serie&&s.rip===u3[0].rip))
+      return {tipo:'deload',kg:+(kg*.9).toFixed(2),serie,rip,
+        consiglio:`Plateau rilevato. Fai un deload: riduci a ${+(kg*.9).toFixed(1)} kg questa settimana.`,emoji:'🔄'};
   }
   const ripTarget = lv==='principiante'?12:lv==='avanzato'?8:10;
-  if (rip < ripTarget) {
-    return { tipo:'ripetizioni', kg, serie, rip:Math.min(rip+2,ripTarget),
-      consiglio:`Il peso regge bene. Oggi prova ${Math.min(rip+2,ripTarget)} ripetizioni mantenendo ${kg} kg.`, emoji:'🔁' };
-  }
-  if (serie < 4) {
-    return { tipo:'volume', kg, serie:serie+1, rip,
-      consiglio:`Aggiungi una serie: passa a ${serie+1} serie × ${rip} rip con ${kg} kg.`, emoji:'📈' };
-  }
-  const nuovoPeso = +(kg+inc).toFixed(2);
-  return { tipo:'peso', kg:nuovoPeso, serie, rip:lv==='avanzato'?Math.max(rip-2,5):rip,
-    consiglio:kg===0?`Punta a ${rip+1} ripetizioni.`:`Aumenta il carico: prova ${nuovoPeso} kg.`, emoji:'💪' };
+  if (rip<ripTarget) return {tipo:'ripetizioni',kg,serie,rip:Math.min(rip+2,ripTarget),
+    consiglio:`Il peso regge bene. Oggi prova ${Math.min(rip+2,ripTarget)} ripetizioni con ${kg>0?kg+' kg':'BW'}.`,emoji:'🔁'};
+  if (serie<4) return {tipo:'volume',kg,serie:serie+1,rip,
+    consiglio:`Aggiungi una serie: passa a ${serie+1} serie × ${rip} rip con ${kg>0?kg+' kg':'BW'}.`,emoji:'📈'};
+  const np = +(kg+inc).toFixed(2);
+  return {tipo:'peso',kg:np,serie,rip:lv==='avanzato'?Math.max(rip-2,5):rip,
+    consiglio:kg===0?`Punta a ${rip+1} ripetizioni.`:`Aumenta il carico. Oggi prova ${np} kg.`,emoji:'💪'};
 }
 
-// ═══════════════════════════════════════════════════════
-// SESSIONE
-// ═══════════════════════════════════════════════════════
-function avviaSessione(giornoId) {
-  const giorno = STATE.schedaAttiva.giorni.find(g => g.id === giornoId);
-  STATE.giornoAttivo = giorno;
-  const lv = (STATE.profilo?.livello||'Intermedio').toLowerCase();
-
-  STATE.sessione = {
-    esercizi: giorno.esercizi.map(e => {
-      const prog = calcolaProgressione(e.storia, lv);
-      const ult = e.storia[e.storia.length-1];
+// ═══════════════════ SESSIONE ═══════════════════
+function avviaSessione(gi) {
+  const giorno = S.schedaAttiva.giorni[gi];
+  S.giornoAttivo = giorno;
+  const lv = (S.profilo?.livello||'Intermedio').toLowerCase();
+  S.sessione = {
+    esercizi: giorno.esercizi.map(e=>{
+      const prog = calcolaProgressione(e.storia||[], lv);
+      const ult = e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
       const tKg = prog?prog.kg:(ult?ult.kg:0);
       const tSerie = prog?prog.serie:(ult?ult.serie:3);
       const tRip = prog?prog.rip:(ult?ult.rip:8);
-      return {
-        ...e, progAI:prog, targetKg:tKg, targetSerie:tSerie, targetRip:tRip,
-        serieLog: Array.from({length:tSerie}, ()=>({kg:tKg, rip:tRip, completata:false})),
-        completato:false, note:''
-      };
+      return {...e, progAI:prog, targetKg:tKg, targetSerie:tSerie, targetRip:tRip,
+        serieLog:Array.from({length:tSerie},()=>({kg:tKg,rip:tRip,completata:false})),
+        completato:false, note:''};
     }),
     idx:0
   };
@@ -506,388 +729,305 @@ function avviaSessione(giornoId) {
 }
 
 function renderSessione() {
-  const { sessione } = STATE;
+  const {sessione} = S;
   const es = sessione.esercizi[sessione.idx];
-  const ult = es.storia[es.storia.length-1];
+  const ult = es.storia&&es.storia.length?es.storia[es.storia.length-1]:null;
   const prog = es.progAI;
-  const tipoColor = {peso:'yellow',volume:'green',ripetizioni:'purple',deload:'red'};
-  const tipoLabel = {peso:'↑ Peso',volume:'↑ Volume',ripetizioni:'↑ Ripetizioni',deload:'Deload'};
+  const tipoColor={peso:'y',volume:'g',ripetizioni:'p',deload:'r'};
+  const tipoLabel={peso:'↑ Peso',volume:'↑ Volume',ripetizioni:'↑ Ripetizioni',deload:'Deload'};
 
-  const progressBars = sessione.esercizi.map((e,i) => {
-    const col = e.completato?'var(--green)':i===sessione.idx?'var(--yellow)':'var(--border)';
+  const bars = sessione.esercizi.map((e,i)=>{
+    const col=e.completato?'var(--green)':i===sessione.idx?'var(--yellow)':'var(--border)';
     return `<div style="flex:1;height:4px;border-radius:2px;background:${col};cursor:pointer;" onclick="jumpEs(${i})"></div>`;
   }).join('');
-  const progressLabels = sessione.esercizi.map((e,i) =>
-    `<span style="flex:1;text-align:center;font-size:9px;font-family:'Oswald';letter-spacing:.04em;color:${i===sessione.idx?'var(--yellow)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="jumpEs(${i})">${e.nome.split(' ')[0]}</span>`
+  const labels = sessione.esercizi.map((e,i)=>
+    `<span style="flex:1;text-align:center;font-size:9px;font-family:'Oswald';color:${i===sessione.idx?'var(--yellow)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="jumpEs(${i})">${e.nome.split(' ')[0]}</span>`
   ).join('');
 
-  // AI Coach
-  let aiHTML = '';
+  let aiHTML='';
   if (prog) {
-    const tc = tipoColor[prog.tipo]||'yellow';
-    aiHTML = `<div style="background:var(--yellow-dim);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:14px;" id="ai-card">
+    aiHTML=`<div style="background:var(--ydim);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:16px;">${prog.emoji}</span>
-          <span class="oswald yellow" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">AI Coach</span>
+          <span class="oswald" style="font-size:12px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;">AI Coach</span>
         </div>
-        <span class="tag tag-${tc}">${tipoLabel[prog.tipo]||prog.tipo}</span>
+        <span class="tag tag-${tipoColor[prog.tipo]||'y'}">${tipoLabel[prog.tipo]||prog.tipo}</span>
       </div>
       <p style="font-size:13px;color:var(--white);line-height:1.5;">${prog.consiglio}</p>
-      <button id="ai-btn" onclick="chiediAI()" style="margin-top:10px;background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--yellow);font-size:11px;font-family:'Inter';font-weight:600;padding:6px 12px;cursor:pointer;">✦ Analisi approfondita</button>
+      <button id="ai-btn" onclick="chiediAISessione()" style="margin-top:10px;background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--yellow);font-size:11px;font-family:'Inter';font-weight:600;padding:6px 12px;cursor:pointer;">✦ Analisi approfondita</button>
       <div id="ai-risposta" style="display:none;margin-top:10px;background:rgba(0,0,0,.3);border-radius:8px;padding:10px;"></div>
+    </div>`;
+  } else if (es.storia && !es.storia.length) {
+    aiHTML=`<div style="background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <p style="font-size:13px;color:var(--green);">🆕 Prima volta con questo esercizio. Inizia con un peso moderato e fai 3 serie da 10 ripetizioni per calibrare.</p>
     </div>`;
   }
 
-  // Ultimo allenamento
-  let ultHTML = '';
+  let ultHTML='';
   if (ult) {
-    ultHTML = `<div class="card-sm" style="margin-bottom:14px;">
+    ultHTML=`<div class="card-sm" style="margin-bottom:14px;">
       <p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Ultima sessione · ${ult.data}</p>
       <div style="display:flex;gap:24px;">
         <div><p style="font-size:10px;color:var(--muted);">Peso</p><p class="oswald" style="font-size:20px;font-weight:700;">${ult.kg>0?ult.kg+' kg':'BW'}</p></div>
         <div><p style="font-size:10px;color:var(--muted);">Serie</p><p class="oswald" style="font-size:20px;font-weight:700;">${ult.serie}</p></div>
         <div><p style="font-size:10px;color:var(--muted);">Rip</p><p class="oswald" style="font-size:20px;font-weight:700;">${ult.rip}</p></div>
-      </div>
-    </div>`;
+      </div></div>`;
   }
 
-  // Serie log
   const prossima = es.serieLog.findIndex(s=>!s.completata);
-  const serieCompletate = es.serieLog.filter(s=>s.completata).length;
-  const serieHTML = es.serieLog.map((s,si) => {
-    const isDone = s.completata;
-    const isActive = si === prossima;
-    const cls = isDone?'done':isActive?'active':'';
-    const badgeBg = isDone?'var(--green)':isActive?'var(--yellow)':'var(--border)';
-    const badgeCol = (isDone||isActive)?'#111':'var(--muted)';
-    const badgeTxt = isDone?'✓':(si+1).toString();
-
-    const inputHTML = !isDone ? `
+  const serieComp = es.serieLog.filter(s=>s.completata).length;
+  const serieHTML = es.serieLog.map((s,si)=>{
+    const isDone=s.completata, isActive=si===prossima;
+    const cls=isDone?'done':isActive?'active':'';
+    const bb=isDone?'var(--green)':isActive?'var(--yellow)':'var(--border)';
+    const bc=(isDone||isActive)?'#111':'var(--muted)';
+    const inputH = !isDone?`
       <div style="display:flex;gap:8px;margin-top:10px;">
-        ${es.targetKg>0?`<div class="num-input">
-          <label>Kg</label>
-          <div class="controls">
-            <button onclick="cambiaSerieVal(${si},'kg',-${es.targetKg>=20?2.5:1.25})">−</button>
-            <span id="s${si}-kg">${s.kg}</span>
-            <button onclick="cambiaSerieVal(${si},'kg',${es.targetKg>=20?2.5:1.25})">+</button>
-          </div>
-        </div>`:''}
-        <div class="num-input">
-          <label>Rip</label>
-          <div class="controls">
-            <button onclick="cambiaSerieVal(${si},'rip',-1)">−</button>
-            <span id="s${si}-rip">${s.rip}</span>
-            <button onclick="cambiaSerieVal(${si},'rip',1)">+</button>
-          </div>
-        </div>
+        ${es.targetKg>0?`<div class="num-input"><label>Kg</label><div class="ni-ctrl">
+          <button onclick="chgS(${si},'kg',-${es.targetKg>=20?2.5:1.25})">−</button>
+          <span id="s${si}-kg">${s.kg}</span>
+          <button onclick="chgS(${si},'kg',${es.targetKg>=20?2.5:1.25})">+</button>
+        </div></div>`:''}
+        <div class="num-input"><label>Rip</label><div class="ni-ctrl">
+          <button onclick="chgS(${si},'rip',-1)">−</button>
+          <span id="s${si}-rip">${s.rip}</span>
+          <button onclick="chgS(${si},'rip',1)">+</button>
+        </div></div>
       </div>
-      <button class="btn ${isActive?'btn-primary':'btn-surface'}" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="completaSerie(${si})">✓ Segna serie ${si+1}</button>
-    ` : `<button onclick="annullaSerie(${si})" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>`;
-
-    const doneLabel = isDone ? `<span class="oswald green" style="font-size:14px;font-weight:600;">${s.kg>0?s.kg+' kg':'BW'} × ${s.rip} rip</span>` :
-      `<span style="font-size:12px;color:${isActive?'var(--yellow)':'var(--muted)'};">${isActive?'Serie attiva':'In attesa'}</span>`;
-
-    return `<div class="serie-card ${cls}" id="serie-card-${si}">
+      <button class="btn ${isActive?'btn-p':'btn-s'}" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="completaSerie(${si})">✓ Segna serie ${si+1}</button>`
+      :`<button onclick="annullaSerie(${si})" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>`;
+    const doneLabel=isDone?`<span class="oswald" style="font-size:14px;font-weight:600;color:var(--green);">${s.kg>0?s.kg+' kg':'BW'} × ${s.rip} rip</span>`
+      :`<span style="font-size:12px;color:${isActive?'var(--yellow)':'var(--muted)'};">${isActive?'Serie attiva':'In attesa'}</span>`;
+    return `<div class="serie-card ${cls}" id="sc-${si}">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <div class="serie-badge" style="background:${badgeBg};color:${badgeCol};">${badgeTxt}</div>
+          <div class="serie-badge" style="background:${bb};color:${bc};">${isDone?'✓':si+1}</div>
           ${doneLabel}
         </div>
-        ${!isDone && es.serieLog.length>1?`<button onclick="rimuoviSerie(${si})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;">×</button>`:''}
-      </div>
-      ${inputHTML}
-    </div>`;
+        ${!isDone&&es.serieLog.length>1?`<button onclick="rmSerie(${si})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;">×</button>`:''}
+      </div>${inputH}</div>`;
   }).join('');
 
-  const tutteComplete = es.serieLog.every(s=>s.completata);
-  const ctaHTML = tutteComplete
-    ? `<button class="btn btn-primary" style="padding:16px 0;font-size:16px;" onclick="avanzaEsercizio()">${sessione.idx < sessione.esercizi.length-1 ? '→ '+sessione.esercizi[sessione.idx+1].nome : 'Concludi Allenamento →'}</button>`
-    : serieCompletate>0?`<p style="text-align:center;font-size:12px;color:var(--muted);">Completa tutte le serie per avanzare</p>`:'';
+  const tutteOk=es.serieLog.every(s=>s.completata);
+  const ctaHTML=tutteOk?`<button class="btn btn-p" style="padding:16px 0;font-size:16px;" onclick="avanzaEsercizio()">${sessione.idx<sessione.esercizi.length-1?'→ '+sessione.esercizi[sessione.idx+1].nome:'Concludi Allenamento →'}</button>`
+    :serieComp>0?`<p style="text-align:center;font-size:12px;color:var(--muted);">Completa tutte le serie per avanzare</p>`:'';
 
-  document.getElementById('screen-sessione').innerHTML = `
+  document.getElementById('screen-sessione').innerHTML=`
     <div style="padding:0 16px 100px;">
       <div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;">
         <button class="back-btn" onclick="goTo('scheda')">‹</button>
         <div style="flex:1;">
-          <p style="font-size:12px;color:var(--muted);">${STATE.giornoAttivo.nome}</p>
+          <p style="font-size:12px;color:var(--muted);">${S.giornoAttivo.nome}</p>
           <h2 class="oswald" style="font-size:22px;font-weight:700;">${es.nome}</h2>
         </div>
-        <span class="tag tag-muted">${es.muscolo}</span>
+        <span class="tag tag-m">${es.muscolo||''}</span>
       </div>
-      <div style="display:flex;gap:4px;margin-bottom:6px;">${progressBars}</div>
-      <div style="display:flex;margin-bottom:16px;">${progressLabels}</div>
-      ${aiHTML}
-      ${ultHTML}
+      <div style="display:flex;gap:4px;margin-bottom:6px;">${bars}</div>
+      <div style="display:flex;margin-bottom:16px;">${labels}</div>
+      ${aiHTML}${ultHTML}
       <div style="margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <p class="oswald" style="font-size:15px;font-weight:600;">Serie — ${serieCompletate}/${es.serieLog.length} completate</p>
-          <button onclick="aggiungiSerie()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--yellow);font-size:12px;font-family:'Oswald';font-weight:600;padding:4px 10px;cursor:pointer;letter-spacing:.05em;">+ Serie</button>
-        </div>
-        ${serieHTML}
+          <p class="oswald" style="font-size:15px;font-weight:600;">Serie — ${serieComp}/${es.serieLog.length} completate</p>
+          <button onclick="addSerie()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--yellow);font-size:12px;font-family:'Oswald';font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button>
+        </div>${serieHTML}
       </div>
-      <textarea id="note-area" rows="3" placeholder="Note (fatica, dolori, sensazioni…)" style="margin-bottom:14px;" oninput="salvaNote(this.value)">${es.note}</textarea>
+      <textarea id="note-area" rows="3" placeholder="Note (fatica, dolori, sensazioni…)" style="margin-bottom:14px;" oninput="S.sessione.esercizi[S.sessione.idx].note=this.value">${es.note||''}</textarea>
       ${ctaHTML}
-    </div>
-  `;
+    </div>`;
 }
 
-function jumpEs(i) {
-  STATE.sessione.idx = i;
+function jumpEs(i){S.sessione.idx=i;renderSessione();}
+function chgS(si,campo,delta){
+  const s=S.sessione.esercizi[S.sessione.idx].serieLog[si];
+  s[campo]=+(Math.max(campo==='rip'?1:0,s[campo]+delta)).toFixed(2);
+  const el=document.getElementById(`s${si}-${campo}`);
+  if(el)el.textContent=s[campo];
+}
+function completaSerie(si){
+  const es=S.sessione.esercizi[S.sessione.idx];
+  es.serieLog[si].completata=true;
+  if(es.serieLog.every(s=>s.completata))es.completato=true;
+  renderSessione();
+  setTimeout(()=>{const n=document.getElementById(`sc-${si+1}`);if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},100);
+}
+function annullaSerie(si){
+  const es=S.sessione.esercizi[S.sessione.idx];
+  es.serieLog[si].completata=false;es.completato=false;renderSessione();
+}
+function addSerie(){
+  const es=S.sessione.esercizi[S.sessione.idx];
+  const u=es.serieLog[es.serieLog.length-1];
+  es.serieLog.push({kg:u?.kg??es.targetKg,rip:u?.rip??es.targetRip,completata:false});
   renderSessione();
 }
-
-function cambiaSerieVal(si, campo, delta) {
-  const s = STATE.sessione.esercizi[STATE.sessione.idx].serieLog[si];
-  const min = campo==='rip'?1:0;
-  const val = +(Math.max(min, s[campo]+delta)).toFixed(2);
-  s[campo] = val;
-  const el = document.getElementById(`s${si}-${campo}`);
-  if (el) el.textContent = val;
-}
-
-function completaSerie(si) {
-  const es = STATE.sessione.esercizi[STATE.sessione.idx];
-  es.serieLog[si].completata = true;
-  if (es.serieLog.every(s=>s.completata)) es.completato = true;
-  renderSessione();
-  // scroll to next
-  setTimeout(()=>{
-    const next = document.getElementById(`serie-card-${si+1}`);
-    if (next) next.scrollIntoView({behavior:'smooth',block:'center'});
-  },100);
-}
-
-function annullaSerie(si) {
-  const es = STATE.sessione.esercizi[STATE.sessione.idx];
-  es.serieLog[si].completata = false;
-  es.completato = false;
-  renderSessione();
-}
-
-function aggiungiSerie() {
-  const es = STATE.sessione.esercizi[STATE.sessione.idx];
-  const ultima = es.serieLog[es.serieLog.length-1];
-  es.serieLog.push({kg:ultima?.kg??es.targetKg, rip:ultima?.rip??es.targetRip, completata:false});
-  renderSessione();
-}
-
-function rimuoviSerie(si) {
-  const es = STATE.sessione.esercizi[STATE.sessione.idx];
-  if (es.serieLog.length <= 1) return;
+function rmSerie(si){
+  const es=S.sessione.esercizi[S.sessione.idx];
+  if(es.serieLog.length<=1)return;
   es.serieLog.splice(si,1);
-  if (es.serieLog.every(s=>s.completata)) es.completato = true;
+  if(es.serieLog.every(s=>s.completata))es.completato=true;
   renderSessione();
 }
-
-function salvaNote(val) {
-  STATE.sessione.esercizi[STATE.sessione.idx].note = val;
+async function chiediAISessione(){
+  const es=S.sessione.esercizi[S.sessione.idx];
+  const btn=document.getElementById('ai-btn');
+  const box=document.getElementById('ai-risposta');
+  if(!btn||!box)return;
+  btn.style.display='none';box.style.display='block';
+  box.innerHTML='<p style="font-size:12px;color:var(--yellow);font-style:italic;">Analisi in corso…</p>';
+  try{
+    const p=S.profilo||{};
+    const prompt=`Coach di fitness. Esercizio: "${es.nome}" (${es.muscolo}). Livello: ${p.livello||'Intermedio'}. Storico: ${JSON.stringify(es.storia||[])}. Suggerimento AI: ${JSON.stringify(es.progAI)}. Scrivi 2-3 frasi motivanti e tecniche in italiano. Numeri specifici. Tono diretto.`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    box.innerHTML=`<p style="font-size:12px;color:var(--white);line-height:1.6;">${data.content?.find(b=>b.type==='text')?.text||'Segui il piano.'}</p>`;
+  }catch{box.innerHTML='<p style="font-size:12px;color:var(--muted);">Connessione non disponibile.</p>';}
 }
 
-function avanzaEsercizio() {
-  const { sessione } = STATE;
-  if (sessione.idx < sessione.esercizi.length-1) {
-    sessione.idx++;
-    renderSessione();
-    document.getElementById('screen-sessione').scrollTop = 0;
-  } else {
-    concludiAllenamento();
-  }
+function avanzaEsercizio(){
+  const {sessione}=S;
+  if(sessione.idx<sessione.esercizi.length-1){
+    sessione.idx++;renderSessione();
+    document.getElementById('screen-sessione').scrollTop=0;
+  } else concludiAllenamento();
 }
 
-async function chiediAI() {
-  const es = STATE.sessione.esercizi[STATE.sessione.idx];
-  const btn = document.getElementById('ai-btn');
-  const box = document.getElementById('ai-risposta');
-  if (!btn || !box) return;
-  btn.style.display = 'none';
-  box.style.display = 'block';
-  box.innerHTML = '<p style="font-size:12px;color:var(--yellow);font-style:italic;">Il coach sta analizzando…</p>';
+function concludiAllenamento(){
+  const {sessione,giornoAttivo,schedaAttiva,schedaAttivaIdx}=S;
+  const oggi=new Date();
+  const iso=`${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-${String(oggi.getDate()).padStart(2,'0')}`;
 
-  try {
-    const prompt = `Sei un coach di fitness esperto. L'utente sta per fare "${es.nome}" (muscolo: ${es.muscolo}). Livello: ${STATE.profilo?.livello||'Intermedio'}. Storico: ${JSON.stringify(es.storia)}. Suggerimento sistema: ${JSON.stringify(es.progAI)}. Scrivi 2-3 frasi motivanti e tecniche in italiano. Sii specifico sui numeri. Tono diretto da coach.`;
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,messages:[{role:'user',content:prompt}]})
-    });
-    const data = await res.json();
-    const testo = data.content?.find(b=>b.type==='text')?.text || 'Segui il piano suggerito.';
-    box.innerHTML = `<p style="font-size:12px;color:var(--white);line-height:1.6;">${testo}</p>`;
-  } catch {
-    box.innerHTML = `<p style="font-size:12px;color:var(--muted);">Segui il consiglio mostrato sopra.</p>`;
-  }
-}
+  // Aggiorna storia esercizi nella scheda
+  sessione.esercizi.forEach(e=>{
+    const esInScheda = schedaAttiva.giorni.find(g=>g.id===giornoAttivo.id)?.esercizi.find(ex=>ex.nome===e.nome);
+    if(esInScheda){
+      if(!esInScheda.storia)esInScheda.storia=[];
+      const kgMedio = e.serieLog.length?+(e.serieLog.reduce((s,x)=>s+x.kg,0)/e.serieLog.length).toFixed(2):e.targetKg;
+      const ripMedio = e.serieLog.length?Math.round(e.serieLog.reduce((s,x)=>s+x.rip,0)/e.serieLog.length):e.targetRip;
+      esInScheda.storia.push({data:iso,kg:kgMedio,serie:e.serieLog.length,rip:ripMedio});
+    }
+  });
 
-function concludiAllenamento() {
-  const { sessione, giornoAttivo } = STATE;
-  const oggi = new Date();
-  document.getElementById('completato-sub').textContent = `${giornoAttivo.nome} — ${oggi.toLocaleDateString('it-IT')}`;
+  // Salva nello storico
+  S.storico.push({
+    dataISO:iso,
+    schedaId:schedaAttivaIdx,
+    giornoId:giornoAttivo.id,
+    giornoNome:giornoAttivo.nome,
+    esercizi:sessione.esercizi.map(e=>({nome:e.nome,muscolo:e.muscolo,serieLog:e.serieLog.map(s=>({kg:s.kg,rip:s.rip}))}))
+  });
+  salvaStorage();
 
-  const lista = sessione.esercizi.map((e,i) => {
-    const kgMedi = e.serieLog.length ? (e.serieLog.reduce((s,x)=>s+x.kg,0)/e.serieLog.length).toFixed(1) : e.targetKg;
-    const ripMedi = e.serieLog.length ? Math.round(e.serieLog.reduce((s,x)=>s+x.rip,0)/e.serieLog.length) : e.targetRip;
+  // Render completato
+  document.getElementById('completato-sub').textContent=`${giornoAttivo.nome} — ${oggi.toLocaleDateString('it-IT')}`;
+  document.getElementById('completato-lista').innerHTML=sessione.esercizi.map((e,i)=>{
+    const kg=e.serieLog.length?+(e.serieLog.reduce((s,x)=>s+x.kg,0)/e.serieLog.length).toFixed(1):e.targetKg;
+    const rip=e.serieLog.length?Math.round(e.serieLog.reduce((s,x)=>s+x.rip,0)/e.serieLog.length):e.targetRip;
     return `<div style="display:flex;justify-content:space-between;padding:10px 0;${i<sessione.esercizi.length-1?'border-bottom:1px solid var(--border);':''}">
       <p style="font-size:14px;font-weight:500;">${e.nome}</p>
-      <p class="oswald yellow" style="font-size:14px;">${e.targetKg>0?kgMedi+' kg':'BW'} × ${ripMedi} × ${e.serieLog.length}</p>
+      <p class="oswald" style="font-size:14px;color:var(--yellow);">${e.targetKg>0?kg+' kg':'BW'} × ${rip} × ${e.serieLog.length}</p>
     </div>`;
   }).join('');
-  document.getElementById('completato-lista').innerHTML = lista;
-
-  const vol = sessione.esercizi.reduce((sum,e)=>
-    sum + e.serieLog.reduce((s,x)=>s+x.kg*x.rip,0)
-  ,0);
-  document.getElementById('completato-volume').innerHTML = vol>0
-    ? `<div style="background:var(--yellow-dim);border:1px solid rgba(246,177,0,.3);border-radius:10px;padding:14px;text-align:center;">
-        <p style="font-size:12px;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;">Volume totale</p>
-        <p class="oswald yellow" style="font-size:28px;font-weight:700;">${vol.toLocaleString('it-IT')} kg</p>
-      </div>` : '';
-
+  const vol=sessione.esercizi.reduce((sum,e)=>sum+e.serieLog.reduce((s,x)=>s+x.kg*x.rip,0),0);
+  document.getElementById('completato-vol').innerHTML=vol>0?`<div style="background:var(--ydim);border:1px solid rgba(246,177,0,.3);border-radius:10px;padding:14px;text-align:center;">
+    <p style="font-size:12px;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;">Volume totale</p>
+    <p class="oswald" style="font-size:28px;font-weight:700;color:var(--yellow);">${vol.toLocaleString('it-IT')} kg</p>
+  </div>`:'';
   goTo('completato');
 }
 
-// ═══════════════════════════════════════════════════════
-// CALENDARIO
-// ═══════════════════════════════════════════════════════
-function calPrev() {
-  let m = STATE.calMese - 1;
-  let y = STATE.calAnno;
-  if (m < 0) { m = 11; y--; }
-  STATE.calMese = m; STATE.calAnno = y; STATE.calGiornoSel = null;
-  renderCalendario();
-}
-function calNext() {
-  let m = STATE.calMese + 1;
-  let y = STATE.calAnno;
-  if (m > 11) { m = 0; y++; }
-  STATE.calMese = m; STATE.calAnno = y; STATE.calGiornoSel = null;
-  renderCalendario();
-}
+// ═══════════════════ CALENDARIO ═══════════════════
+function calPrev(){let m=S.calMese-1,y=S.calAnno;if(m<0){m=11;y--;}S.calMese=m;S.calAnno=y;S.calGiornoSel=null;renderCalendario();}
+function calNext(){let m=S.calMese+1,y=S.calAnno;if(m>11){m=0;y++;}S.calMese=m;S.calAnno=y;S.calGiornoSel=null;renderCalendario();}
 
-function renderCalendario() {
-  const { calMese:mese, calAnno:anno } = STATE;
-  document.getElementById('cal-titolo').textContent = `${MESI[mese]} ${anno}`;
-
-  // Header
-  document.getElementById('cal-header').innerHTML = GIORNI.map(g=>
-    `<div style="text-align:center;font-size:11px;color:var(--muted);font-family:'Oswald';font-weight:500;letter-spacing:.05em;padding-bottom:6px;">${g}</div>`
-  ).join('');
-
-  const primo = new Date(anno, mese, 1);
-  const ultimo = new Date(anno, mese+1, 0);
-  let startDow = primo.getDay()-1; if (startDow<0) startDow=6;
-
-  const today = new Date();
-  const oggiStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-  let celle = '';
-  for (let i=0; i<startDow; i++) celle += '<div></div>';
-  for (let d=1; d<=ultimo.getDate(); d++) {
-    const iso = `${anno}-${String(mese+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const haWork = !!calMap[iso];
-    const isOggi = iso===oggiStr;
-    const isSel = STATE.calGiornoSel===d;
-    let cls = 'cal-day';
-    if (haWork) cls += ' has-workout';
-    if (isOggi && !isSel) cls += ' today';
-    if (isSel) cls += ' selected';
-    const click = haWork ? `onclick="selGiorno(${d})"` : '';
-    const dot = haWork&&!isSel ? '<div class="dot"></div>' : '';
-    celle += `<div class="${cls}" ${click}><span>${d}</span>${dot}</div>`;
+function renderCalendario(){
+  const {calMese:mese,calAnno:anno}=S;
+  document.getElementById('cal-titolo').textContent=`${MESI[mese]} ${anno}`;
+  document.getElementById('cal-header').innerHTML=GIORNI_IT.map(g=>`<div style="text-align:center;font-size:11px;color:var(--muted);font-family:'Oswald';font-weight:500;letter-spacing:.05em;padding-bottom:6px;">${g}</div>`).join('');
+  const primo=new Date(anno,mese,1),ultimo=new Date(anno,mese+1,0);
+  let sd=primo.getDay()-1;if(sd<0)sd=6;
+  const today=new Date();
+  const oggiStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  // Build calMap from storico
+  const calMap={};
+  S.storico.forEach(a=>{calMap[a.dataISO]=a;});
+  let celle='';
+  for(let i=0;i<sd;i++)celle+='<div></div>';
+  for(let d=1;d<=ultimo.getDate();d++){
+    const iso=`${anno}-${String(mese+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hw=!!calMap[iso],isOggi=iso===oggiStr,isSel=S.calGiornoSel===d;
+    let cls='cal-day';
+    if(hw)cls+=' hw';if(isOggi&&!isSel)cls+=' today';if(isSel)cls+=' sel';
+    const click=hw?`onclick="selGiorno(${d})"`:isOggi?`onclick="selGiorno(${d})"`:'' ;
+    const dot=hw&&!isSel?'<div class="cal-dot"></div>':'';
+    celle+=`<div class="${cls}" ${click}><span>${d}</span>${dot}</div>`;
   }
-  document.getElementById('cal-grid').innerHTML = celle;
+  document.getElementById('cal-grid').innerHTML=celle;
   renderCalDetail();
 }
 
-function selGiorno(d) {
-  STATE.calGiornoSel = STATE.calGiornoSel===d ? null : d;
-  renderCalendario();
-  if (STATE.calGiornoSel) {
-    setTimeout(()=>{
-      document.getElementById('cal-detail').scrollIntoView({behavior:'smooth',block:'start'});
-    },100);
-  }
-}
+function selGiorno(d){S.calGiornoSel=S.calGiornoSel===d?null:d;renderCalendario();
+  if(S.calGiornoSel)setTimeout(()=>{document.getElementById('cal-detail').scrollIntoView({behavior:'smooth',block:'start'});},100);}
 
-function renderCalDetail() {
-  const el = document.getElementById('cal-detail');
-  const d = STATE.calGiornoSel;
-  if (!d) {
-    el.innerHTML = '<p style="text-align:center;font-size:13px;color:var(--muted);margin-top:8px;">Tocca un giorno verde per vedere i dettagli</p>';
-    return;
-  }
-  const iso = `${STATE.calAnno}-${String(STATE.calMese+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  const a = calMap[iso];
-  if (!a) { el.innerHTML = ''; return; }
-
-  const righe = a.esercizi.map((e,i)=>`
-    <div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;padding:9px 0;${i<a.esercizi.length-1?'border-bottom:1px solid var(--border);':''}align-items:center;">
+function renderCalDetail(){
+  const el=document.getElementById('cal-detail');
+  const d=S.calGiornoSel;
+  if(!d){el.innerHTML='<p style="text-align:center;font-size:13px;color:var(--muted);margin-top:8px;">Tocca un giorno verde per vedere i dettagli</p>';return;}
+  const iso=`${S.calAnno}-${String(S.calMese+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const a=S.storico.find(x=>x.dataISO===iso);
+  if(!a){el.innerHTML='';return;}
+  const righe=a.esercizi.map((e,i)=>{
+    const kg=e.serieLog&&e.serieLog.length?e.serieLog[0].kg:0;
+    const rip=e.serieLog&&e.serieLog.length?e.serieLog[0].rip:0;
+    const serie=e.serieLog?e.serieLog.length:0;
+    return `<div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;padding:9px 0;${i<a.esercizi.length-1?'border-bottom:1px solid var(--border);':''}align-items:center;">
       <p style="font-size:14px;font-weight:500;">${e.nome}</p>
-      <p class="oswald yellow" style="font-size:14px;text-align:right;">${e.kg>0?e.kg+' kg':'BW'}</p>
-      <p class="oswald" style="font-size:14px;text-align:right;">${e.serie}</p>
-      <p class="oswald" style="font-size:14px;text-align:right;">${e.rip}</p>
-    </div>`).join('');
-
-  const vol = a.esercizi.reduce((s,e)=>s+e.kg*e.serie*e.rip,0);
-  const volHTML = vol>0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
-    <p style="font-size:12px;color:var(--muted);">Volume totale</p>
-    <p class="oswald yellow" style="font-size:15px;font-weight:700;">${vol.toLocaleString('it-IT')} kg</p>
-  </div>` : '';
-
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <p class="oswald yellow" style="font-size:17px;font-weight:600;">${d} ${MESI[STATE.calMese]}</p>
-      <span class="tag tag-yellow">${a.giorno}</span>
-    </div>
-    <div class="card">
-      <div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
-        ${['Esercizio','Peso','Serie','Rip'].map((h,i)=>`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;${i>0?'text-align:right;':''}">${h}</p>`).join('')}
-      </div>
-      ${righe}
-      ${volHTML}
+      <p class="oswald" style="font-size:14px;color:var(--yellow);text-align:right;">${kg>0?kg+' kg':'BW'}</p>
+      <p class="oswald" style="font-size:14px;text-align:right;">${serie}</p>
+      <p class="oswald" style="font-size:14px;text-align:right;">${rip}</p>
     </div>`;
+  }).join('');
+  const vol=a.esercizi.reduce((s,e)=>s+(e.serieLog?e.serieLog.reduce((ss,x)=>ss+x.kg*x.rip,0):0),0);
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <p class="oswald" style="font-size:17px;font-weight:600;color:var(--yellow);">${d} ${MESI[S.calMese]}</p>
+    <span class="tag tag-y">${a.giornoNome||''}</span>
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+      ${['Esercizio','Peso','Serie','Rip'].map((h,i)=>`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;${i>0?'text-align:right;':''}">${h}</p>`).join('')}
+    </div>${righe}
+    ${vol>0?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
+      <p style="font-size:12px;color:var(--muted);">Volume totale</p>
+      <p class="oswald" style="font-size:15px;font-weight:700;color:var(--yellow);">${vol.toLocaleString('it-IT')} kg</p>
+    </div>`:''}
+  </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
-// PROFILO
-// ═══════════════════════════════════════════════════════
-function renderProfilo() {
-  const p = STATE.profilo || {};
-  const avatar = p.sesso==='Uomo'?'♂':p.sesso==='Donna'?'♀':'✦';
-  document.getElementById('profilo-avatar').textContent = avatar;
-  document.getElementById('profilo-tag').textContent = p.livello||'Intermedio';
-
-  const items = [
-    {l:'Livello',v:p.livello||'—'},
-    {l:'Peso corporeo',v:(p.peso||'—')+' kg'},
-    {l:'Altezza',v:(p.altezza||'—')+' cm'},
-    {l:'Età',v:(p.eta||'—')+' anni'},
-    {l:'Sesso',v:p.sesso||'—'},
-  ];
-  document.getElementById('profilo-items').innerHTML = items.map((item,i)=>
+// ═══════════════════ PROFILO ═══════════════════
+function renderProfilo(){
+  const p=S.profilo||{};
+  document.getElementById('profilo-avatar').textContent=p.sesso==='Uomo'?'♂':p.sesso==='Donna'?'♀':'✦';
+  document.getElementById('profilo-tag').textContent=p.livello||'—';
+  const items=[{l:'Livello',v:p.livello||'—'},{l:'Peso corporeo',v:(p.peso||'—')+' kg'},{l:'Altezza',v:(p.altezza||'—')+' cm'},{l:'Età',v:(p.eta||'—')+' anni'},{l:'Sesso',v:p.sesso||'—'}];
+  document.getElementById('profilo-items').innerHTML=items.map((item,i)=>
     `<div style="display:flex;justify-content:space-between;padding:12px 0;${i<items.length-1?'border-bottom:1px solid var(--border);':''}">
-      <p style="font-size:14px;color:var(--muted);">${item.l}</p>
-      <p style="font-size:14px;font-weight:600;">${item.v}</p>
-    </div>`
+      <p style="font-size:14px;color:var(--muted);">${item.l}</p><p style="font-size:14px;font-weight:600;">${item.v}</p></div>`
   ).join('');
-
-  const totAllenamenti = ALLENAMENTI_CAL.length;
-  const mesiDistinti = [...new Set(ALLENAMENTI_CAL.map(a=>a.dataISO.substring(0,7)))].length;
-  const totEsercizi = ALLENAMENTI_CAL.reduce((s,a)=>s+a.esercizi.length,0);
-  const stats = [{l:'Allenamenti totali',v:totAllenamenti},{l:'Mesi attivi',v:mesiDistinti},{l:'Esercizi registrati',v:totEsercizi}];
-  document.getElementById('profilo-stats').innerHTML =
-    `<p class="oswald" style="font-size:16px;font-weight:600;margin-bottom:12px;">Statistiche</p>` +
-    stats.map((s,i)=>
-      `<div style="display:flex;justify-content:space-between;padding:10px 0;${i<stats.length-1?'border-bottom:1px solid var(--border);':''}">
+  const totAllen=S.storico.length;
+  const mesiDistinti=[...new Set(S.storico.map(a=>a.dataISO.substring(0,7)))].length;
+  const totEs=S.storico.reduce((s,a)=>s+a.esercizi.length,0);
+  document.getElementById('profilo-stats').innerHTML=
+    `<p class="oswald" style="font-size:16px;font-weight:600;margin-bottom:12px;">Statistiche</p>`+
+    [{l:'Allenamenti totali',v:totAllen},{l:'Mesi attivi',v:mesiDistinti||0},{l:'Esercizi registrati',v:totEs}].map((s,i)=>
+      `<div style="display:flex;justify-content:space-between;padding:10px 0;${i<2?'border-bottom:1px solid var(--border);':''}">
         <p style="font-size:13px;color:var(--muted);">${s.l}</p>
-        <p class="oswald yellow" style="font-size:18px;font-weight:700;">${s.v}</p>
+        <p class="oswald" style="font-size:18px;font-weight:700;color:var(--yellow);">${s.v}</p>
       </div>`
     ).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
-initOnboarding();
+// ═══════════════════ INIT ═══════════════════
+initApp();
 </script>
 </body>
 </html>
