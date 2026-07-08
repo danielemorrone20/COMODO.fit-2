@@ -131,8 +131,8 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
   <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="htags"></div>
   <button onclick="openChat('home')" style="width:100%;background:var(--yd);border:1.5px solid rgba(246,177,0,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:20px;text-align:left;">
     <span style="font-size:22px;">✦</span>
-    <div><p class="ow" style="font-size:15px;font-weight:600;color:var(--y);">Parla con il tuo AI Coach</p>
-    <p style="font-size:12px;color:var(--mu);margin-top:2px;">Consigli, dubbi, domande</p></div>
+    <div><p class="ow" style="font-size:15px;font-weight:600;color:var(--w);">COMODO<span style="color:var(--y);">AI</span></p>
+    <p style="font-size:12px;color:var(--mu);margin-top:2px;">Il tuo coach personale intelligente</p></div>
   </button>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <p class="ow" style="font-size:18px;font-weight:600;">Le mie schede</p>
@@ -255,7 +255,7 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
 </div>
 
 <!-- CHAT -->
-<div id="screen-chat" style="display:none;flex-direction:column;height:100%;max-height:100vh;position:absolute;inset:0;z-index:50;background:var(--bg);">
+<div id="screen-chat" style="display:none;flex-direction:column;height:100vh;position:fixed;top:0;left:0;right:0;bottom:0;z-index:150;background:var(--bg);max-width:430px;margin:0 auto;">
   <div style="display:flex;align-items:center;gap:12px;padding:28px 16px 16px;flex-shrink:0;">
     <button class="bk" onclick="chatBack()">‹</button>
     <div style="flex:1;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Assistente</p>
@@ -334,7 +334,7 @@ function goTo(sc){
   const noNav=['sessione','completato','chat'];
   document.getElementById('bnav').style.display=noNav.includes(sc)?'none':'flex';
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
-  if(sc==='chat'){document.getElementById('screen-chat').style.display='flex';setTimeout(()=>{const m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;},100);return;}
+  if(sc==='chat'){const cc=document.getElementById('screen-chat');cc.style.display='flex';document.getElementById('bnav').style.display='none';setTimeout(()=>{const m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;const inp=document.getElementById('chat-in');if(inp)inp.focus();},150);return;}
   const el=document.getElementById('screen-'+sc);
   if(el){el.classList.add('on');el.scrollTop=0;}
   const tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
@@ -618,12 +618,29 @@ function renderSES(){
   const lbls=SES.esercizi.map((e,i)=>'<span style="flex:1;text-align:center;font-size:9px;font-family:Oswald;color:'+(i===SES.idx?'var(--y)':'var(--mu)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="jumpEs('+i+')">'+e.nome.split(' ')[0]+'</span>').join('');
   let aiH='';
   if(prog){const np=(es.storia||[]).filter(s=>s.note&&s.note.trim()).slice(-2).map(s=>'['+s.data+']: '+s.note).join(' | ');aiH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">'+prog.emoji+'</span><span class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:.08em;">AI Coach</span></div><span class="tag '+tc[prog.tipo]+'">'+tl[prog.tipo]+'</span></div><p style="font-size:13px;line-height:1.5;">'+prog.consiglio+'</p>'+(np?'<p style="font-size:11px;color:var(--mu);margin-top:8px;font-style:italic;">📝 Nota prec.: '+np+'</p>':'')+'<button id="ai-sb" onclick="chiediAISes()" style="margin-top:10px;background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:11px;font-weight:600;padding:6px 12px;cursor:pointer;">✦ Analisi approfondita</button><div id="ai-sbox" style="display:none;margin-top:10px;background:rgba(0,0,0,.3);border-radius:8px;padding:10px;"></div></div>';}
-  else if(!ult)aiH='<div style="background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:12px;padding:12px;margin-bottom:14px;"><p style="font-size:13px;color:var(--gr);">🆕 Prima volta! Inizia con un peso controllabile. 3 serie da 10 rip è ottimo per calibrare.</p></div>';
+  else if(!ult){aiH='<div style="background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:12px;padding:14px;margin-bottom:14px;"><p class="ow" style="font-size:12px;font-weight:700;color:var(--gr);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🆕 Prima volta</p><p style="font-size:13px;color:var(--gr);line-height:1.5;">Inizia con un peso che riesci a controllare bene. Fai le serie, poi ti chiedo il feedback per calibrare la prossima sessione.</p></div>';}
   let ultH='';if(ult)ultH='<div class="cdsm" style="margin-bottom:14px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Ultima sessione · '+ult.data+'</p><div style="display:flex;gap:24px;"><div><p style="font-size:10px;color:var(--mu);">Peso</p><p class="ow" style="font-size:20px;font-weight:700;">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p></div><div><p style="font-size:10px;color:var(--mu);">Serie</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.serie+'</p></div><div><p style="font-size:10px;color:var(--mu);">Rip</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.rip+'</p></div></div>'+(ult.note?'<p style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+ult.note+'</p>':'')+'</div>';
   const pr=es.serieLog.findIndex(s=>!s.comp);const sc=es.serieLog.filter(s=>s.comp).length;
   let serH='';
   es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><span id="sv'+si+'k">'+s.kg+'</span><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><span id="sv'+si+'r">'+s.rip+'</span><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
-  const tutteOk=es.serieLog.every(s=>s.comp);const ctaH=tutteOk?'<button class="btn bp" style="padding:16px 0;font-size:16px;" onclick="avanzaEs()">'+(SES.idx<SES.esercizi.length-1?'→ '+SES.esercizi[SES.idx+1].nome:'Concludi Allenamento →')+'</button>':(sc>0?'<p style="text-align:center;font-size:12px;color:var(--mu);">Completa tutte le serie per avanzare</p>':'');
+  const tutteOk=es.serieLog.every(s=>s.comp);
+  const isPrimaVolta=!ult&&tutteOk&&!es.feedbackDato;
+  let ctaH='';
+  if(isPrimaVolta){
+    ctaH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:16px;margin-bottom:14px;" id="feedback-box">'
+      +'<p class="ow" style="font-size:14px;font-weight:700;margin-bottom:4px;">COMODO AI — Come &egrave; andata?</p>'
+      +'<p style="font-size:13px;color:var(--mu);margin-bottom:14px;">Valuta la fatica da 1 a 10:</p>'
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">'
+      +[1,2,3,4,5,6,7,8,9,10].map(function(n){return '<button onclick="selFatica('+n+')" id="fb'+n+'" style="width:38px;height:38px;border-radius:8px;background:var(--sur2);border:1.5px solid var(--brd);color:var(--w);font-family:Oswald;font-size:14px;font-weight:600;cursor:pointer;">'+n+'</button>';}).join('')
+      +'</div>'
+      +'<textarea id="fb-note" rows="2" placeholder="Avresti potuto fare altre rip? Era il limite? Tecnica ok?" style="margin-bottom:12px;"></textarea>'
+      +'<button class="btn bp" onclick="salvaFeedback()" style="padding:12px 0;font-size:14px;">Salva e vai avanti →</button>'
+      +'</div>';
+  } else if(tutteOk){
+    ctaH='<button class="btn bp" style="padding:16px 0;font-size:16px;" onclick="avanzaEs()">'+(SES.idx<SES.esercizi.length-1?'→ '+SES.esercizi[SES.idx+1].nome:'Concludi Allenamento →')+'</button>';
+  } else if(sc>0){
+    ctaH='<p style="text-align:center;font-size:12px;color:var(--mu);">Completa tutte le serie per avanzare</p>';
+  }
   document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;"><div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div><div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div><div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'+aiH+ultH+'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie — '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div><textarea id="note-ta" rows="3" placeholder="Note (fatica, dolori, sensazioni…)" style="margin-bottom:14px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea>'+ctaH+'<button onclick="openChat(\'sessione\')" style="width:100%;background:none;border:1px solid rgba(246,177,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:10px;"><span style="color:var(--y);font-size:14px;">✦</span><span class="ow" style="font-size:13px;font-weight:600;color:var(--y);letter-spacing:.06em;">CHIEDI ALL\'AI COACH</span></button></div>';
 }
 function jumpEs(i){SES.idx=i;renderSES();}
@@ -688,11 +705,38 @@ async function reqNotif(){if(!('Notification'in window))return;await Notificatio
 
 // AI CHAT
 function openChat(from){chatFrom=from||'home';if(!chatHistory.length){const p=S.profilo||{};chatHistory=[{role:'assistant',content:'Ciao! Sono il tuo AI Coach. Conosco il tuo profilo ('+(p.livello||'—')+', '+(p.eta||'—')+' anni, '+(p.peso||'—')+' kg). Come posso aiutarti?'}];}renderChatMsgs();goTo('chat');}
-function chatBack(){if(chatFrom==='sessione'){goTo('sessione');renderSES();}else goTo('home');}
+function chatBack(){document.getElementById('screen-chat').style.display='none';if(chatFrom==='sessione'){goTo('sessione');renderSES();}else goTo('home');}
 function clearChat(){chatHistory=[];renderChatMsgs();}
 function renderChatMsgs(){const el=document.getElementById('chat-msgs');if(!el)return;if(!chatHistory.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">✦</div><p class="ow" style="font-size:18px;">Chiedimi qualcosa</p><p style="font-size:13px;color:var(--mu);">Sono il tuo coach personale</p></div>';return;}el.innerHTML=chatHistory.map(m=>'<div style="display:flex;'+(m.role==='user'?'justify-content:flex-end':'justify-content:flex-start')+'"><div class="'+(m.role==='user'?'cb-u':'cb-a')+'" '+(m.loading?'style="color:var(--mu);font-style:italic;"':'')+'>'+m.content+'</div></div>').join('');el.scrollTop=el.scrollHeight;}
 async function sendChat(){const inp=document.getElementById('chat-in');if(!inp)return;const txt=inp.value.trim();if(!txt)return;inp.value='';chatHistory.push({role:'user',content:txt});chatHistory.push({role:'assistant',content:'…',loading:true});renderChatMsgs();const p=S.profilo||{};const schedeI=S.schede.map(s=>s.nome+': '+s.giorni.map(g=>g.nome+'('+g.esercizi.map(e=>e.nome).join(',')+')').join('|')).join('/');const recN=S.storico.slice(-5).flatMap(a=>a.esercizi.filter(e=>e.note&&e.note.trim()).map(e=>e.nome+': '+e.note)).join(' | ');const sys='Sei un personal trainer AI in COMODO.fit. Profilo: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg, '+(p.altezza||'')+' cm. Schede: '+(schedeI||'nessuna')+'. '+(recN?'Note recenti: '+recN+'. ':'')+' Rispondi in italiano, diretto, max 3-4 frasi. Se parla di dolori, consiglia cautela e medico.';const msgs=chatHistory.filter(m=>!m.loading).slice(-10).map(m=>({role:m.role,content:m.content}));try{const r=await callAI(txt,400,sys,msgs.slice(0,-1));chatHistory=chatHistory.filter(m=>!m.loading);chatHistory.push({role:'assistant',content:r});}catch{chatHistory=chatHistory.filter(m=>!m.loading);chatHistory.push({role:'assistant',content:'Connessione non disponibile. Riprova.'});}renderChatMsgs();}
 
+
+// FEEDBACK PRIMA VOLTA
+var feedbackFatica=0;
+function selFatica(n){
+  feedbackFatica=n;
+  for(var i=1;i<=10;i++){
+    var b=document.getElementById('fb'+i);
+    if(b){b.style.background=i===n?'var(--y)':'var(--sur2)';b.style.color=i===n?'#111':'var(--w)';b.style.borderColor=i===n?'var(--y)':'var(--brd)';}
+  }
+}
+async function salvaFeedback(){
+  var es=SES.esercizi[SES.idx];
+  var nota=document.getElementById('fb-note')?document.getElementById('fb-note').value:'';
+  var fatica=feedbackFatica;
+  es.note='Fatica: '+fatica+'/10. '+nota;
+  es.feedbackDato=true;
+  var p=S.profilo||{};
+  var box=document.getElementById('feedback-box');
+  if(box)box.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">COMODO AI sta analizzando il tuo feedback…</p>';
+  var prompt='Sei un personal trainer AI. Prima sessione con "'+es.nome+'" ('+es.muscolo+'). Livello: '+(p.livello||'Intermedio')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg. Ha fatto '+es.serieLog.length+' serie con '+(es.tKg>0?es.tKg+' kg':'bodyweight')+' x '+es.tR+' rip. Feedback fatica: '+fatica+'/10. '+nota+'. Dimmi in 2-3 frasi: il peso era giusto? Cosa consiglio per la prossima sessione? Italiano, diretto, numeri specifici.';
+  try{
+    var r=await callAI(prompt,250);
+    if(box)box.innerHTML='<p class="ow" style="font-size:12px;font-weight:700;color:var(--y);margin-bottom:6px;">COMODO AI — Analisi</p><p style="font-size:13px;line-height:1.6;">'+r+'</p><button class="btn bp" onclick="avanzaEs()" style="margin-top:12px;padding:10px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';
+  }catch(e){
+    if(box)box.innerHTML='<button class="btn bp" onclick="avanzaEs()" style="padding:12px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';
+  }
+}
 // AI HELPER
 async function callAI(prompt,maxTok,sys,prev){const msgs=prev?[...prev,{role:'user',content:prompt}]:[{role:'user',content:prompt}];const body={model:'claude-sonnet-4-6',max_tokens:maxTok||300,messages:msgs};if(sys)body.system=sys;const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();return data.content?.find(b=>b.type==='text')?.text||'';}
 
