@@ -815,23 +815,26 @@ async function reqNotif(){if(!('Notification'in window))return;await Notificatio
 function openChat(from){
   chatFrom=from||'home';
   if(!chatHistory.length){
-    const p=S.profilo||{};
+    var p=S.profilo||{};
     chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI, il tuo coach personale. Conosco il tuo profilo: '+(p.livello||'-')+', '+(p.eta||'-')+' anni, '+(p.peso||'-')+' kg. Chiedimi qualsiasi cosa su allenamento, nutrizione, recupero o i tuoi progressi.'}];
   }
-  renderChatMsgs();
-  const cc=document.getElementById('screen-chat');
-  cc.style.display='flex';
+  // Nascondi tutto
+  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
   document.getElementById('bnav').style.display='none';
-  document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));
+  // Mostra chat
+  var cc=document.getElementById('screen-chat');
+  cc.style.cssText='display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);max-width:430px;margin:0 auto;';
+  renderChatMsgs();
   setTimeout(function(){
-    const inp=document.getElementById('chat-in');
-    if(inp){inp.focus();}
-    const m=document.getElementById('chat-msgs');
+    var m=document.getElementById('chat-msgs');
     if(m)m.scrollTop=m.scrollHeight;
-  },200);
+    var inp=document.getElementById('chat-in');
+    if(inp){inp.removeAttribute('disabled');inp.focus();}
+  },300);
 }
 function chatBack(){
-  document.getElementById('screen-chat').style.display='none';
+  var cc=document.getElementById('screen-chat');
+  cc.style.cssText='display:none;';
   if(chatFrom==='sessione'){goTo('sessione');renderSES();}
   else{goTo('home');}
 }
