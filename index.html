@@ -111,6 +111,12 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
   <p class="ow" style="font-size:22px;font-weight:700;color:var(--brd);margin-top:60px;letter-spacing:.1em;">COMODO.fit</p>
 </div>
 
+<!-- SPLASH -->
+<div id="splash" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:2000;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+  <p class="ow" style="font-size:42px;font-weight:700;letter-spacing:.02em;">COMODO<span style="color:var(--y);">.fit</span></p>
+  <p style="font-size:13px;color:var(--mu);letter-spacing:.12em;text-transform:uppercase;">Il tuo coach personale</p>
+</div>
+
 <!-- ONBOARDING -->
 <div id="sonb" style="display:none;flex-direction:column;justify-content:center;min-height:100vh;padding:24px;">
   <div style="display:flex;gap:6px;margin-bottom:28px;" id="onb-prog"></div>
@@ -737,24 +743,13 @@ function renderSES(){
   let serH='';
   es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><span id="sv'+si+'k">'+s.kg+'</span><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><span id="sv'+si+'r">'+s.rip+'</span><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
   const tutteOk=es.serieLog.every(s=>s.comp);
-  const isPrimaVolta=!ult&&tutteOk&&!es.feedbackDato;
-  let ctaH='';
-  if(isPrimaVolta){
-    ctaH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:16px;margin-bottom:14px;" id="feedback-box">'
-      +'<p class="ow" style="font-size:14px;font-weight:700;margin-bottom:4px;">COMODO AI — Come &egrave; andata?</p>'
-      +'<p style="font-size:13px;color:var(--mu);margin-bottom:14px;">Valuta la fatica da 1 a 10:</p>'
-      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">'
-      +[1,2,3,4,5,6,7,8,9,10].map(function(n){return '<button onclick="selFatica('+n+')" id="fb'+n+'" style="width:38px;height:38px;border-radius:8px;background:var(--sur2);border:1.5px solid var(--brd);color:var(--w);font-family:Oswald;font-size:14px;font-weight:600;cursor:pointer;">'+n+'</button>';}).join('')
-      +'</div>'
-      +'<textarea id="fb-note" rows="2" placeholder="Avresti potuto fare altre rip? Era il limite? Tecnica ok?" style="margin-bottom:12px;"></textarea>'
-      +'<button class="btn bp" onclick="salvaFeedback()" style="padding:12px 0;font-size:14px;">Salva e vai avanti →</button>'
-      +'</div>';
-  } else if(tutteOk){
+  var ctaH='';
+  if(tutteOk){
     ctaH='<button class="btn bp" style="padding:16px 0;font-size:16px;" onclick="avanzaEs()">'+(SES.idx<SES.esercizi.length-1?'→ '+SES.esercizi[SES.idx+1].nome:'Concludi Allenamento →')+'</button>';
   } else if(sc>0){
     ctaH='<p style="text-align:center;font-size:12px;color:var(--mu);">Completa tutte le serie per avanzare</p>';
   }
-  document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;"><div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div><div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div><div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'+aiH+ultH+'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie — '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div><textarea id="note-ta" rows="3" placeholder="Note (fatica, dolori, sensazioni…)" style="margin-bottom:14px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea>'+ctaH+'<button onclick="openChat(\'sessione\')" style="width:100%;background:none;border:1px solid rgba(246,177,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:10px;"><span style="color:var(--y);font-size:14px;">✦</span><span class="ow" style="font-size:13px;font-weight:600;color:var(--y);letter-spacing:.06em;">CHIEDI ALL\'AI COACH</span></button></div>';
+  document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;"><div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div><div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div><div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'+aiH+ultH+'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie — '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div><div style="background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Note / Domande</p><button onclick="openChat(\'sessione\')" style="background:none;border:1px solid rgba(246,177,0,.35);border-radius:14px;padding:4px 10px;color:var(--y);font-size:11px;font-family:Oswald;font-weight:600;cursor:pointer;">✦ COMODO AI</button></div><textarea id="note-ta" rows="3" placeholder="Come è andata? Fatica, dolori, domande..." style="background:transparent;border:none;padding:0;margin:0;width:100%;resize:none;outline:none;color:var(--w);font-family:Inter;font-size:13px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea></div>'+ctaH+'</div>';
 }
 function jumpEs(i){SES.idx=i;renderSES();}
 function chgS(si,c,d){const s=SES.esercizi[SES.idx].serieLog[si];s[c]=+(Math.max(c==='rip'?1:0,s[c]+d)).toFixed(2);const el=document.getElementById('sv'+si+(c==='kg'?'k':'r'));if(el)el.textContent=s[c];}
@@ -1241,7 +1236,23 @@ function init(){
   load();
   if(localStorage.getItem('cf_welcomed')){
     document.getElementById('sw').style.display='none';
-    if(S.profilo){goTo('home');initConsiglio();}else{startOnb();initConsiglio();}
+    if(S.profilo){
+      // Mostra splash per 2s poi va alla home
+      var sp=document.getElementById('splash');
+      sp.style.display='flex';
+      setTimeout(function(){
+        sp.style.opacity='0';
+        sp.style.transition='opacity .4s';
+        setTimeout(function(){
+          sp.style.display='none';
+          goTo('home');
+          initConsiglio();
+        },400);
+      },1800);
+    } else {
+      startOnb();
+      initConsiglio();
+    }
   }
 }
 init();
