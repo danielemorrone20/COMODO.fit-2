@@ -893,19 +893,23 @@ async function sendChat(){
 // AI HELPER
 async function callAI(prompt,maxTok,sys,prev){
   try{
-    const msgs=prev?[...prev,{role:'user',content:prompt}]:[{role:'user',content:prompt}];
-    const body={model:'claude-sonnet-4-6',max_tokens:maxTok||300,messages:msgs};
+    var msgs=prev?prev.concat([{role:'user',content:prompt}]):[{role:'user',content:prompt}];
+    var body={messages:msgs,max_tokens:maxTok||300};
     if(sys)body.system=sys;
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    var res=await fetch('https://comodo-api.vercel.app/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(body)
     });
-    if(!res.ok){const err=await res.text();console.error('API error:',err);return '';}
-    const data=await res.json();
-    if(data.error){console.error('API error:',data.error);return '';}
-    return (data.content&&data.content.find(function(b){return b.type==='text';})||{text:''}).text||'';
-  }catch(e){console.error('callAI error:',e);throw e;}
+    if(!res.ok){var err=await res.text();console.error('API error:',err);return 'Errore di connessione. Riprova.';}
+    var data=await res.json();
+    if(data.error){console.error('API error:',data.error);return 'Errore AI. Riprova tra poco.';}
+    var block=data.content&&data.content.find(function(b){return b.type==='text';});
+    return block?block.text:'';
+  }catch(e){
+    console.error('callAI error:',e);
+    throw e;
+  }
 }
 
 
