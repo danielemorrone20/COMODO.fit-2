@@ -129,10 +129,9 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
     <h1 class="ow" style="font-size:30px;font-weight:700;margin-top:2px;">COMODO<span style="color:var(--y);">.fit</span></h1>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="htags"></div>
-  <button onclick="openChat('home')" style="width:100%;background:var(--yd);border:1.5px solid rgba(246,177,0,.3);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:20px;text-align:left;">
-    <span style="font-size:22px;">✦</span>
-    <div><p class="ow" style="font-size:15px;font-weight:600;color:var(--w);">COMODO<span style="color:var(--y);">AI</span></p>
-    <p style="font-size:12px;color:var(--mu);margin-top:2px;">Il tuo coach personale intelligente</p></div>
+  <button onclick="openChat('home')" style="background:none;border:1.5px solid rgba(246,177,0,.35);border-radius:20px;padding:7px 16px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:20px;">
+    <span style="font-size:12px;color:var(--y);">✦</span>
+    <span class="ow" style="font-size:13px;font-weight:600;color:var(--w);letter-spacing:.04em;">COMODO<span style="color:var(--y);">AI</span></span>
   </button>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <p class="ow" style="font-size:18px;font-weight:600;">Le mie schede</p>
@@ -140,6 +139,13 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
   </div>
   <div id="hschede" style="margin-bottom:24px;"></div>
   <div id="hrec"></div>
+  <div id="consiglio-home" style="margin-top:20px;background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <p style="font-size:10px;color:var(--y);font-family:Oswald;font-weight:600;text-transform:uppercase;letter-spacing:.08em;">✦ Consiglio del giorno</p>
+      <p style="font-size:10px;color:var(--mu);" id="consiglio-num"></p>
+    </div>
+    <p style="font-size:13px;color:var(--w);line-height:1.5;" id="consiglio-txt"></p>
+  </div>
 </div>
 
 <!-- SCHEDA -->
@@ -148,7 +154,8 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
     <button class="bk" onclick="goTo('home')">‹</button>
     <div style="flex:1;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Scheda</p>
     <h2 class="ow" style="font-size:24px;font-weight:700;" id="sc-nome"></h2></div>
-    <button onclick="aiSchedaAnalisi()" style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:8px;padding:8px 12px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;cursor:pointer;">✦ AI</button>
+    <button onclick="aiSchedaAnalisi()" style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:8px;padding:8px 12px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;cursor:pointer;margin-right:6px;">✦ AI</button>
+    <button onclick="toggleModificaScheda()" id="btn-modifica" style="background:var(--sur2);border:1px solid var(--brd);border-radius:8px;padding:8px 12px;color:var(--mu);font-size:12px;font-family:Oswald;font-weight:600;cursor:pointer;">✏️ Modifica</button>
   </div>
   <div id="ai-sc-box" style="display:none;background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:16px;">
     <p class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">✦ Analisi AI</p>
@@ -255,7 +262,7 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
 </div>
 
 <!-- CHAT -->
-<div id="screen-chat" style="display:none;flex-direction:column;height:100vh;position:fixed;top:0;left:0;right:0;bottom:0;z-index:150;background:var(--bg);max-width:430px;margin:0 auto;">
+<div id="screen-chat" style="display:none;flex-direction:column;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:100%;z-index:9999;background:var(--bg);">
   <div style="display:flex;align-items:center;gap:12px;padding:28px 16px 16px;flex-shrink:0;">
     <button class="bk" onclick="chatBack()">‹</button>
     <div style="flex:1;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Assistente</p>
@@ -339,7 +346,7 @@ function goTo(sc){
   if(el){el.classList.add('on');el.scrollTop=0;}
   const tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
   if(tab[sc])document.querySelector('[data-t="'+tab[sc]+'"]')?.classList.add('on');
-  if(sc==='home')renderHome();
+  if(sc==='home'){renderHome();initConsiglio();}
   if(sc==='storico')renderCal();
   if(sc==='profilo')renderProfilo();
   if(sc==='impostazioni')renderSet();
@@ -509,37 +516,143 @@ function confirmEs(){
 }
 
 // SCHEDA DETAIL
+var schedaInModifica=false;
+
 function apriScheda(i){
-  scAttiva=S.schede[i];scIdx=i;
+  scAttiva=S.schede[i];scIdx=i;schedaInModifica=false;
   document.getElementById('sc-nome').textContent=scAttiva.nome;
   document.getElementById('ai-sc-box').style.display='none';
-  let html='';
+  var btn=document.getElementById('btn-modifica');
+  if(btn){btn.textContent='✏️ Modifica';btn.style.color='var(--mu)';}
+  renderSchedaBody();
+  goTo('scheda');
+}
+
+function toggleModificaScheda(){
+  schedaInModifica=!schedaInModifica;
+  var btn=document.getElementById('btn-modifica');
+  if(btn){btn.textContent=schedaInModifica?'✓ Fine':'✏️ Modifica';btn.style.color=schedaInModifica?'var(--y)':'var(--mu)';}
+  if(!schedaInModifica){save();}
+  renderSchedaBody();
+}
+
+function renderSchedaBody(){
+  var html='';
+  if(schedaInModifica){
+    html+='<div class="card" style="margin-bottom:16px;background:rgba(246,177,0,.06);border-color:rgba(246,177,0,.3);">'
+      +'<p style="font-size:11px;color:var(--y);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;font-family:Oswald;font-weight:600;">Rinomina scheda</p>'
+      +'<input type="text" value="'+scAttiva.nome+'" oninput="scAttiva.nome=this.value;document.getElementById(\'sc-nome\').textContent=this.value;">'
+      +'</div>';
+  }
   scAttiva.giorni.forEach(function(g,gi){
-    html+='<div style="margin-bottom:20px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;color:var(--y);text-transform:uppercase;letter-spacing:.06em;">'+g.nome+'</p><button class="btn bg" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione('+gi+')">Allena →</button></div>';
-    g.esercizi.forEach(function(e){
-      const ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
-      const cid='ch_'+e.nome.replace(/\W/g,'_');
-      html+='<div class="cdsm" style="margin-bottom:8px;cursor:pointer;" onclick="apriEs(\''+encodeURIComponent(e.nome)+'\','+gi+')">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;"><div><p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p><p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p></div>'
-        +(ult?'<div style="text-align:right;"><p class="ow" style="font-size:14px;font-weight:600;color:var(--y);">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p><p style="font-size:11px;color:var(--mu);">'+ult.serie+' × '+ult.rip+'</p></div>':'')
-        +'</div>'+(e.storia&&e.storia.length>=2?'<div id="'+cid+'" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);"></div>':'')+'</div>';
+    html+='<div style="margin-bottom:20px;">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+    if(schedaInModifica){
+      html+='<input type="text" value="'+g.nome+'" oninput="scAttiva.giorni['+gi+'].nome=this.value" style="font-family:Oswald;font-size:15px;font-weight:600;color:var(--y);background:none;border:none;border-bottom:1px solid var(--y);border-radius:0;outline:none;padding:4px 0;width:auto;flex:1;">';
+      html+='<button onclick="aggiungiEsInScheda('+gi+')" style="background:none;border:1px dashed var(--y);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;white-space:nowrap;margin-left:8px;">+ Esercizio</button>';
+    } else {
+      html+='<p class="ow" style="font-size:15px;font-weight:600;color:var(--y);text-transform:uppercase;letter-spacing:.06em;">'+g.nome+'</p>';
+      html+='<button class="btn bg" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione('+gi+')">Allena →</button>';
+    }
+    html+='</div>';
+    g.esercizi.forEach(function(e,ei){
+      var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
+      if(schedaInModifica){
+        html+='<div class="cdsm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;">'
+          +'<div style="flex:1;">'
+          +'<p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p>'
+          +'<p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p>'
+          +'<div style="display:flex;gap:10px;margin-top:8px;">'
+          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Kg</label>'
+          +'<input type="number" value="'+(e.kgInizio||0)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].kgInizio=parseFloat(this.value)||0" style="width:65px;padding:6px 8px;font-size:13px;"></div>'
+          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Serie</label>'
+          +'<input type="number" value="'+(e.serieInizio||3)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].serieInizio=parseInt(this.value)||3" style="width:58px;padding:6px 8px;font-size:13px;"></div>'
+          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Rip</label>'
+          +'<input type="number" value="'+(e.ripInizio||10)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].ripInizio=parseInt(this.value)||10" style="width:58px;padding:6px 8px;font-size:13px;"></div>'
+          +'</div></div>'
+          +'<button onclick="rimuoviEsDaScheda('+gi+','+ei+')" style="background:none;border:none;color:var(--re);font-size:24px;cursor:pointer;padding:0 0 0 10px;flex-shrink:0;line-height:1;">×</button>'
+          +'</div>';
+      } else {
+        var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');
+        html+='<div class="cdsm" style="margin-bottom:8px;cursor:pointer;" onclick="apriEs(\''+encodeURIComponent(e.nome)+'\','+gi+')">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;"><div>'
+          +'<p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p>'
+          +'<p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p></div>'
+          +(ult?'<div style="text-align:right;"><p class="ow" style="font-size:14px;font-weight:600;color:var(--y);">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p><p style="font-size:11px;color:var(--mu);">'+ult.serie+' x '+ult.rip+'</p></div>':'')
+          +'</div>'+(e.storia&&e.storia.length>=2?'<div id="'+cid+'" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);"></div>':'')
+          +'</div>';
+      }
     });
+    if(schedaInModifica&&scAttiva.giorni.length>1){
+      html+='<button onclick="rimuoviGiornoScheda('+gi+')" style="background:none;border:1px solid var(--re);border-radius:6px;color:var(--re);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;margin-top:4px;">Rimuovi giorno</button>';
+    }
     html+='</div>';
   });
+  if(schedaInModifica){
+    html+='<button onclick="aggiungiGiornoScheda()" class="btn bs" style="margin-bottom:12px;">+ Aggiungi giorno</button>';
+    html+='<button onclick="eliminaScheda()" class="btn" style="background:var(--re);color:#fff;margin-bottom:20px;">Elimina scheda</button>';
+  }
   document.getElementById('sc-body').innerHTML=html;
-  goTo('scheda');
-  setTimeout(function(){scAttiva.giorni.forEach(function(g){g.esercizi.forEach(function(e){if(e.storia&&e.storia.length>=2)miniChart(e.storia,'ch_'+e.nome.replace(/\W/g,'_'));});});},100);
+  if(!schedaInModifica){
+    setTimeout(function(){
+      scAttiva.giorni.forEach(function(g){
+        g.esercizi.forEach(function(e){
+          var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');
+          if(e.storia&&e.storia.length>=2)miniChart(e.storia,cid);
+        });
+      });
+    },100);
+  }
 }
-function miniChart(st,cid){
-  const el=document.getElementById(cid);if(!el)return;
-  const last=st.slice(-5);const maxKg=Math.max(...last.map(s=>s.kg||0));if(maxKg===0){el.innerHTML='';return;}
-  const pct=st[0].kg>0?(((st[st.length-1].kg-st[0].kg)/st[0].kg)*100).toFixed(1):0;
-  const col=pct>=0?'var(--gr)':'var(--re)';
-  let bars='<div class="bwrap">';
-  last.forEach(function(s,i){const h=Math.round((s.kg/maxKg)*60)||4;const isL=i===last.length-1;const dt=new Date(s.data+'T00:00:00');bars+='<div class="bcol"><div class="bval">'+(s.kg||'')+'</div><div class="bbar" style="height:'+h+'px;background:'+(isL?'var(--y)':'var(--sur2)')+';border:1px solid '+(isL?'var(--y)':'var(--brd)')+'"></div><div class="blbl">'+dt.getDate()+'/'+(dt.getMonth()+1)+'</div></div>';});
-  bars+='</div>';
-  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;">Progressione</p><span style="font-size:12px;font-weight:600;font-family:Oswald;color:'+col+';">'+(pct>=0?'+':'')+pct+'%</span></div>'+bars;
+
+function rimuoviEsDaScheda(gi,ei){
+  if(!confirm('Rimuovere "'+scAttiva.giorni[gi].esercizi[ei].nome+'"?'))return;
+  scAttiva.giorni[gi].esercizi.splice(ei,1);save();renderSchedaBody();
 }
+function rimuoviGiornoScheda(gi){
+  if(!confirm('Rimuovere "'+scAttiva.giorni[gi].nome+'"?'))return;
+  scAttiva.giorni.splice(gi,1);save();renderSchedaBody();
+}
+function aggiungiGiornoScheda(){
+  var ids=['A','B','C','D','E','F'];var i=scAttiva.giorni.length;
+  scAttiva.giorni.push({id:ids[i]||String(i+1),nome:'Giorno '+(ids[i]||i+1),esercizi:[]});
+  save();renderSchedaBody();
+}
+function aggiungiEsInScheda(gi){
+  addEsGi=gi;window._addEsTarget='scheda';
+  var b=document.getElementById('mo-es-body');
+  var html='<p style="font-size:13px;color:var(--mu);margin-bottom:12px;">Aggiungi esercizio</p>'
+    +'<input type="text" id="es-ni" placeholder="Nome esercizio..." style="margin-bottom:10px;">'
+    +'<input type="text" id="es-mi" placeholder="Gruppo muscolare..." style="margin-bottom:10px;">'
+    +'<div style="display:flex;gap:8px;margin-bottom:16px;">'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Kg</label><input type="number" id="es-ki" value="0" style="text-align:center;"></div>'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Serie</label><input type="number" id="es-si" value="3" style="text-align:center;"></div>'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Rip</label><input type="number" id="es-ri" value="10" style="text-align:center;"></div>'
+    +'</div>';
+  Object.entries(ESP).forEach(function(entry){
+    var cat=entry[0],list=entry[1];
+    html+='<p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">'+cat+'</p><div style="display:flex;flex-wrap:wrap;">';
+    list.forEach(function(e){html+='<span class="chip" style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;margin:4px;cursor:pointer;" onclick="pickEs(this,\''+e.replace(/'/g,"\\'")+'\',\''+cat+'\')">'+e+'</span>';});
+    html+='</div>';
+  });
+  html+='<button class="btn bp" style="margin-top:20px;" onclick="confirmEsInScheda()">Aggiungi</button>';
+  b.innerHTML=html;document.getElementById('mo-es').classList.add('on');
+}
+function confirmEsInScheda(){
+  var nome=document.getElementById('es-ni').value.trim();
+  var mu=document.getElementById('es-mi').value.trim();
+  var kg=parseFloat(document.getElementById('es-ki').value||0)||0;
+  var ser=parseInt(document.getElementById('es-si').value||3)||3;
+  var rip=parseInt(document.getElementById('es-ri').value||10)||10;
+  if(!nome)return;
+  scAttiva.giorni[addEsGi].esercizi.push({nome:nome,muscolo:mu||'—',storia:[],kgInizio:kg,serieInizio:ser,ripInizio:rip});
+  save();document.getElementById('mo-es').classList.remove('on');renderSchedaBody();
+}
+function eliminaScheda(){
+  if(!confirm('Eliminare la scheda "'+scAttiva.nome+'"?'))return;
+  S.schede.splice(scIdx,1);save();goTo('home');
+}
+
 async function aiSchedaAnalisi(){
   const box=document.getElementById('ai-sc-box');const txt=document.getElementById('ai-sc-txt');
   box.style.display='block';txt.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">Analisi in corso…</p>';
@@ -704,41 +817,101 @@ function timerDone(){if(navigator.vibrate)navigator.vibrate([200,100,200]);if(SE
 async function reqNotif(){if(!('Notification'in window))return;await Notification.requestPermission();}
 
 // AI CHAT
-function openChat(from){chatFrom=from||'home';if(!chatHistory.length){const p=S.profilo||{};chatHistory=[{role:'assistant',content:'Ciao! Sono il tuo AI Coach. Conosco il tuo profilo ('+(p.livello||'—')+', '+(p.eta||'—')+' anni, '+(p.peso||'—')+' kg). Come posso aiutarti?'}];}renderChatMsgs();goTo('chat');}
-function chatBack(){document.getElementById('screen-chat').style.display='none';if(chatFrom==='sessione'){goTo('sessione');renderSES();}else goTo('home');}
+function openChat(from){
+  chatFrom=from||'home';
+  if(!chatHistory.length){
+    const p=S.profilo||{};
+    chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI, il tuo coach personale. Conosco il tuo profilo: '+(p.livello||'-')+', '+(p.eta||'-')+' anni, '+(p.peso||'-')+' kg. Chiedimi qualsiasi cosa su allenamento, nutrizione, recupero o i tuoi progressi.'}];
+  }
+  renderChatMsgs();
+  const cc=document.getElementById('screen-chat');
+  cc.style.display='flex';
+  document.getElementById('bnav').style.display='none';
+  document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));
+  setTimeout(function(){
+    const inp=document.getElementById('chat-in');
+    if(inp){inp.focus();}
+    const m=document.getElementById('chat-msgs');
+    if(m)m.scrollTop=m.scrollHeight;
+  },200);
+}
+function chatBack(){
+  document.getElementById('screen-chat').style.display='none';
+  if(chatFrom==='sessione'){goTo('sessione');renderSES();}
+  else{goTo('home');}
+}
 function clearChat(){chatHistory=[];renderChatMsgs();}
-function renderChatMsgs(){const el=document.getElementById('chat-msgs');if(!el)return;if(!chatHistory.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">✦</div><p class="ow" style="font-size:18px;">Chiedimi qualcosa</p><p style="font-size:13px;color:var(--mu);">Sono il tuo coach personale</p></div>';return;}el.innerHTML=chatHistory.map(m=>'<div style="display:flex;'+(m.role==='user'?'justify-content:flex-end':'justify-content:flex-start')+'"><div class="'+(m.role==='user'?'cb-u':'cb-a')+'" '+(m.loading?'style="color:var(--mu);font-style:italic;"':'')+'>'+m.content+'</div></div>').join('');el.scrollTop=el.scrollHeight;}
-async function sendChat(){const inp=document.getElementById('chat-in');if(!inp)return;const txt=inp.value.trim();if(!txt)return;inp.value='';chatHistory.push({role:'user',content:txt});chatHistory.push({role:'assistant',content:'…',loading:true});renderChatMsgs();const p=S.profilo||{};const schedeI=S.schede.map(s=>s.nome+': '+s.giorni.map(g=>g.nome+'('+g.esercizi.map(e=>e.nome).join(',')+')').join('|')).join('/');const recN=S.storico.slice(-5).flatMap(a=>a.esercizi.filter(e=>e.note&&e.note.trim()).map(e=>e.nome+': '+e.note)).join(' | ');const sys='Sei un personal trainer AI in COMODO.fit. Profilo: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg, '+(p.altezza||'')+' cm. Schede: '+(schedeI||'nessuna')+'. '+(recN?'Note recenti: '+recN+'. ':'')+' Rispondi in italiano, diretto, max 3-4 frasi. Se parla di dolori, consiglia cautela e medico.';const msgs=chatHistory.filter(m=>!m.loading).slice(-10).map(m=>({role:m.role,content:m.content}));try{const r=await callAI(txt,400,sys,msgs.slice(0,-1));chatHistory=chatHistory.filter(m=>!m.loading);chatHistory.push({role:'assistant',content:r});}catch{chatHistory=chatHistory.filter(m=>!m.loading);chatHistory.push({role:'assistant',content:'Connessione non disponibile. Riprova.'});}renderChatMsgs();}
-
-
-// FEEDBACK PRIMA VOLTA
-var feedbackFatica=0;
-function selFatica(n){
-  feedbackFatica=n;
-  for(var i=1;i<=10;i++){
-    var b=document.getElementById('fb'+i);
-    if(b){b.style.background=i===n?'var(--y)':'var(--sur2)';b.style.color=i===n?'#111':'var(--w)';b.style.borderColor=i===n?'var(--y)':'var(--brd)';}
+function renderChatMsgs(){
+  var el=document.getElementById('chat-msgs');
+  if(!el)return;
+  if(!chatHistory||!chatHistory.length){
+    el.innerHTML='<div class="empty"><div style="font-size:48px;">✦</div><p class="ow" style="font-size:18px;">Chiedimi qualcosa</p><p style="font-size:13px;color:var(--mu);">Sono il tuo coach personale</p></div>';
+    return;
   }
+  var html='';
+  for(var i=0;i<chatHistory.length;i++){
+    var m=chatHistory[i];
+    var isUser=m.role==='user';
+    var isLoading=!!m.loading;
+    var txt=m.content||'';
+    html+='<div style="display:flex;'+(isUser?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:2px;">';
+    html+='<div class="'+(isUser?'cb-u':'cb-a')+'" '+(isLoading?'style="color:var(--mu);font-style:italic;"':'')+'>'+txt+'</div>';
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  el.scrollTop=el.scrollHeight;
 }
-async function salvaFeedback(){
-  var es=SES.esercizi[SES.idx];
-  var nota=document.getElementById('fb-note')?document.getElementById('fb-note').value:'';
-  var fatica=feedbackFatica;
-  es.note='Fatica: '+fatica+'/10. '+nota;
-  es.feedbackDato=true;
+
+
+async function sendChat(){
+  var inp=document.getElementById('chat-in');
+  if(!inp)return;
+  var txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  chatHistory.push({role:'user',content:txt});
+  chatHistory.push({role:'assistant',content:'…',loading:true});
+  renderChatMsgs();
   var p=S.profilo||{};
-  var box=document.getElementById('feedback-box');
-  if(box)box.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">COMODO AI sta analizzando il tuo feedback…</p>';
-  var prompt='Sei un personal trainer AI. Prima sessione con "'+es.nome+'" ('+es.muscolo+'). Livello: '+(p.livello||'Intermedio')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg. Ha fatto '+es.serieLog.length+' serie con '+(es.tKg>0?es.tKg+' kg':'bodyweight')+' x '+es.tR+' rip. Feedback fatica: '+fatica+'/10. '+nota+'. Dimmi in 2-3 frasi: il peso era giusto? Cosa consiglio per la prossima sessione? Italiano, diretto, numeri specifici.';
-  try{
-    var r=await callAI(prompt,250);
-    if(box)box.innerHTML='<p class="ow" style="font-size:12px;font-weight:700;color:var(--y);margin-bottom:6px;">COMODO AI — Analisi</p><p style="font-size:13px;line-height:1.6;">'+r+'</p><button class="btn bp" onclick="avanzaEs()" style="margin-top:12px;padding:10px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';
-  }catch(e){
-    if(box)box.innerHTML='<button class="btn bp" onclick="avanzaEs()" style="padding:12px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';
+  var schedeI=S.schede.map(function(s){return s.nome+': '+s.giorni.map(function(g){return g.nome+'('+g.esercizi.map(function(e){return e.nome;}).join(',')+')';}).join('|');}).join('/');
+  var recN=S.storico.slice(-5).reduce(function(acc,a){return acc.concat(a.esercizi.filter(function(e){return e.note&&e.note.trim();}).map(function(e){return e.nome+': '+e.note;}));}, []).join(' | ');
+  var sys='Sei un personal trainer AI chiamato COMODO AI. Profilo utente: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg, '+(p.altezza||'')+' cm. Schede attive: '+(schedeI||'nessuna')+'. '+(recN?'Note recenti: '+recN+'. ':'')+' Rispondi in italiano, tono diretto e motivante, max 3-4 frasi. Se parla di dolori consiglia cautela e medico.';
+  var msgs=[];
+  for(var i=0;i<chatHistory.length;i++){
+    if(!chatHistory[i].loading)msgs.push({role:chatHistory[i].role,content:chatHistory[i].content});
   }
+  msgs=msgs.slice(-10);
+  // rimuovi l'ultimo messaggio utente (lo aggiungiamo tramite callAI)
+  var prevMsgs=msgs.slice(0,-1);
+  try{
+    var r=await callAI(txt,400,sys,prevMsgs);
+    chatHistory=chatHistory.filter(function(m){return !m.loading;});
+    chatHistory.push({role:'assistant',content:r||'Non ho capito, puoi ripetere?'});
+  }catch(e){
+    chatHistory=chatHistory.filter(function(m){return !m.loading;});
+    chatHistory.push({role:'assistant',content:'Connessione non disponibile. Controlla la connessione e riprova.'});
+  }
+  renderChatMsgs();
 }
+
+
 // AI HELPER
-async function callAI(prompt,maxTok,sys,prev){const msgs=prev?[...prev,{role:'user',content:prompt}]:[{role:'user',content:prompt}];const body={model:'claude-sonnet-4-6',max_tokens:maxTok||300,messages:msgs};if(sys)body.system=sys;const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();return data.content?.find(b=>b.type==='text')?.text||'';}
+async function callAI(prompt,maxTok,sys,prev){
+  try{
+    const msgs=prev?[...prev,{role:'user',content:prompt}]:[{role:'user',content:prompt}];
+    const body={model:'claude-sonnet-4-6',max_tokens:maxTok||300,messages:msgs};
+    if(sys)body.system=sys;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok){const err=await res.text();console.error('API error:',err);return '';}
+    const data=await res.json();
+    if(data.error){console.error('API error:',data.error);return '';}
+    return (data.content&&data.content.find(function(b){return b.type==='text';})||{text:''}).text||'';
+  }catch(e){console.error('callAI error:',e);throw e;}
+}
 
 
 // PROGRAMMI
@@ -762,13 +935,313 @@ const PROG={
   avanzato_benessere:{nome:'Performance e Benessere — Avanzato',desc:'4 giorni · Forza + mobilità',giorni:[mG('A','Upper',[mE('Panca Piana bilanciere','Petto',70,4,8),mE('Trazioni','Dorsali',0,4,8),mE('Military Press','Spalle',45,3,10),mE('Face Pull','Spalle posteriori',15,3,15),mE('Curl bilanciere','Bicipiti',22,3,12),mE('Dips','Tricipiti',0,3,12)]),mG('B','Lower',[mE('Squat bilanciere','Gambe',80,4,8),mE('Romanian Deadlift','Femorali',65,3,10),mE('Hip Thrust','Glutei',55,3,12),mE('Calf Raises','Polpacci',0,4,20),mE('Ab Wheel','Core',0,3,12)]),mG('C','Mobilità + Core',[mE('Yoga flow o stretching attivo','Mobilità',0,1,1200),mE('Turkish Get-up','Full Body',10,3,5),mE('Plank varianti','Core',0,4,40),mE('Russian Twist','Core',8,3,20),mE('Respirazione diaframmatica','Recupero',0,1,300)]),mG('D','Full Body Funzionale',[mE('Kettlebell Swing','Full Body',20,4,15),mE('Farmer Walk','Full Body',24,4,30),mE('Trazioni','Dorsali',0,3,10),mE('Push-up esplosivi','Petto',0,3,12),mE('Squat jump','Gambe',0,3,10)])]},
 };
 
+
+// 365 CONSIGLI DEL GIORNO
+var CONSIGLI=[
+"La progressione è re. Aggiungi sempre qualcosa — un kg, una rip, una serie.",
+"Dormi 7-9 ore. È durante il sonno che i muscoli crescono, non in palestra.",
+"L'idratazione influenza le prestazioni del 20-30%. Bevi prima di sentire sete.",
+"La tecnica prima del peso. Un movimento perfetto con 60 kg vale più di uno sloppy con 100.",
+"Il riscaldamento non è opzionale. 5 minuti proteggono anni di allenamento.",
+"Mangia proteine entro 30-60 minuti dal workout. Il muscolo è affamato in quel momento.",
+"La costanza batte l'intensità. 3 sedute a settimana per anni > 7 sedute per 3 mesi.",
+"Il dolore muscolare non misura la qualità dell'allenamento. Impara a distinguerlo.",
+"La creatina monoidrata è il supplemento più studiato e sicuro in assoluto. Funziona.",
+"Non saltare le gambe. Il 60% della massa muscolare è nella parte inferiore del corpo.",
+"Registra ogni allenamento. Non puoi migliorare ciò che non misuri.",
+"Lo stretching statico prima del workout riduce la forza. Fallo dopo, non prima.",
+"Il metabolismo basale aumenta con la massa muscolare. Più muscolo = più calorie bruciate a riposo.",
+"Il caffè pre-workout aumenta le performance del 10-15%. Assumilo 30-45 min prima.",
+"La respirazione conta. Espira nella fase di spinta, inspira nella fase eccentrica.",
+"Un deload ogni 4-6 settimane non è debolezza, è strategia.",
+"Il peso sulla bilancia non misura i tuoi progressi. Misura composizione corporea.",
+"I muscoli stabilizzatori sono spesso il vero limite. Lavora sul core.",
+"La frutta non fa ingrassare. Lo zucchero in eccesso sì, ma la frutta intera no.",
+"Il ROM completo stimola più fibre muscolari. Vai in profondità con sicurezza.",
+"Il tuo corpo si adatta in 4-6 settimane. Cambia stimolo periodicamente.",
+"Non copiare la routine del più grosso in palestra. Lui ha anni di adattamento che tu non hai.",
+"L'acido lattico non è la causa del DOMS. Il dolore post-allenamento viene da microlacerazioni.",
+"Mangiare grasso non fa ingrassare. L'eccesso calorico fa ingrassare.",
+"La postura è un allenamento. Stai dritto anche quando non sei in palestra.",
+"Il bicipite si lavora ogni volta che tiri. Il tricipite ogni volta che spingi.",
+"Allenare i dorsali migliora la panca piana. La catena posteriore sostiene la spinta.",
+"Le fibre lente (tipo I) rispondono meglio ai volumi alti. Le veloci (tipo II) ai carichi pesanti.",
+"Un buon riscaldamento è specifico: movimenti simili a quelli dell'allenamento principale.",
+"La mindfulness si applica anche all'allenamento. Senti il muscolo che lavora.",
+"Le calorie non sono tutte uguali ma il bilancio calorico rimane fondamentale.",
+"I piedi sono la base di tutto. Scarpe da ginnastica con suola sottile per i compound.",
+"La frequenza di allenamento conta quanto il volume. 2x a settimana per gruppo muscolare è ottimo.",
+"Non esistono esercizi magici. Esistono principi fondamentali applicati con costanza.",
+"Il tuo ego è il tuo peggior nemico in palestra. Peso giusto, tecnica giusta.",
+"L'omega-3 riduce l'infiammazione e migliora il recupero. Pesce o supplemento.",
+"Il muscolo non cresce durante l'allenamento ma durante il recupero.",
+"Variare gli angoli di lavoro stimola porzioni diverse dello stesso muscolo.",
+"La vitamina D è carente nel 70% delle persone. Influenza testosterone e immunità.",
+"Non esiste spot reduction. Non puoi dimagrire in un punto specifico.",
+"Le superserie risparmiano tempo e aumentano il volume. Abbinale con saggezza.",
+"La percezione dello sforzo (RPE) è uno strumento potente. Impara a usarla.",
+"Il testosterone naturale si ottimizza con sonno, stress basso e allenamento intenso.",
+"La cucina è il tuo secondo allenamento. Senza dieta non ci sono risultati.",
+"Le trazioni sono il re degli esercizi per il dorsale. Nessuna macchina le sostituisce.",
+"Lo squat è il re degli esercizi per le gambe. Impara la tecnica perfetta prima di caricare.",
+"Il tuo corpo non conosce i giorni della settimana. Ascolta la fatica e recupera quando serve.",
+"Il magnesio migliora il sonno e il recupero muscolare. Spesso è carente.",
+"Allenare i muscoli piccoli non renderà inutile allenare i grandi. Complementano.",
+"La pazienza è il supplemento più sottovalutato del fitness.",
+"Le pompe muscolari non indicano crescita. Sono piacevoli ma non il metro del lavoro.",
+"Allenati come se non ci fosse domani ma recupera come se ci fosse sempre un domani.",
+"La costanza nel lungo termine è più importante di qualsiasi tecnica avanzata.",
+"Il cortisolo alto sabota i risultati. Gestisci lo stress fuori dalla palestra.",
+"Non ignorare i segnali del corpo. Distingui il fastidio dal dolore reale.",
+"La massa muscolare è un investimento a lungo termine. Si costruisce anni, si perde mesi.",
+"L'allenamento funzionale migliora la qualità della vita quotidiana.",
+"Bevande sportive hanno senso solo per sessioni oltre i 60-90 minuti intensi.",
+"Il ritmo respiratorio durante il cardio indica l'intensità. Parla ma con fatica = zona ideale.",
+"Le scarpe da corsa non sono adatte per i pesi. Compra scarpe specifiche.",
+"Il volume totale (serie x rip x kg) è il principale driver di ipertrofia.",
+"Non esiste 'tono muscolare'. Esiste muscolo presente e grasso che lo copre.",
+"Allenare la mobilità delle anche previene il mal di schiena.",
+"Il movimento eccentrico (fase di discesa) è dove si costruisce più muscolo.",
+"Le proteine vegetali funzionano quanto quelle animali se combinate correttamente.",
+"Il cardio non uccide i muscoli. L'eccesso calorico negativo sì.",
+"Le pause tra le serie contano. 2-3 min per forza, 60-90 sec per ipertrofia.",
+"Il volume di allenamento deve crescere gradualmente. Non raddoppiare dall'oggi al domani.",
+"La panca piana è misura di forza ma non di salute. Non ossessionarti.",
+"Il grip (presa) è spesso il limite. Allena gli avambracci e usa il magnesia.",
+"Un personal trainer vale l'investimento, soprattutto all'inizio.",
+"Le varianti degli esercizi servono a superare plateau e prevenire infortuni.",
+"Allenare due volte la stessa parte nella stessa giornata raramente vale la pena.",
+"Il corpo risponde agli stimoli nuovi. La monotonia è nemica della crescita.",
+"La dieta mediterranea è ancora il modello alimentare più validato per salute e performance.",
+"I grassi saturi non sono il diavolo ma non esagerare. L'equilibrio è tutto.",
+"Gli antiossidanti post-workout possono ridurre l'adattamento muscolare. Meno supplementi, più cibo reale.",
+"L'acqua aiuta il metabolismo. 35ml per kg di peso corporeo è il punto di partenza.",
+"La variazione del tempo sotto tensione è un modo efficace per diversificare lo stimolo.",
+"Non servono 2 ore in palestra. 45-60 minuti intensi e focalizzati sono superiori.",
+"L'allenamento in superset riduce i tempi ma mantiene il volume. Ideale per chi ha fretta.",
+"Il corpo brucia più calorie di notte di quanto pensi. Il metabolismo notturno è attivo.",
+"Esercizi unilaterali correggono gli squilibri e migliorano la coordinazione.",
+"Non aver paura di mangiare prima di dormire. I muscoli riparano durante il sonno.",
+"Il BMI è un indice impreciso. La composizione corporea è molto più significativa.",
+"Le proteine del siero del latte (whey) sono rapidamente assimilabili. Ottime post-workout.",
+"La caseina è digerita lentamente. Ottima prima di dormire per il recupero notturno.",
+"Il grasso viscerale (addominale) è più pericoloso di quello sottocutaneo.",
+"L'intensità percepita è soggettiva. Il tuo 8/10 può essere diverso da quello di un altro.",
+"Non esiste il momento perfetto per iniziare. Il momento è adesso.",
+"Allenare il core non significa solo addominali. Include tutta la muscolatura stabilizzatrice.",
+"La frequenza cardiaca a riposo scende con l'allenamento aerobico. È un buon indicatore di salute.",
+"Le endorfine rilasciate durante l'esercizio riducono il dolore e migliorano l'umore.",
+"Il grasso non si converte in muscolo. Sono processi biologici separati.",
+"Le braccia crescono più velocemente quando alleni anche i grandi gruppi muscolari.",
+"L'allenamento migliora la sensibilità insulinica. Ottimo contro il diabete di tipo 2.",
+"La pressione arteriosa scende con l'esercizio regolare. Effetto immediato e a lungo termine.",
+"Il cervello beneficia dell'esercizio quanto il corpo. Migliora memoria e concentrazione.",
+"L'aumento di peso sulla bilancia dopo l'allenamento è spesso ritenzione idrica.",
+"Le donne non diventano 'grosse' con i pesi. La testosterona è troppo bassa.",
+"L'allenamento dopo i 40 anni è più importante di prima, non meno.",
+"I bambini che fanno sport hanno migliori risultati scolastici. L'attività fisica aiuta il cervello.",
+"Non confrontarti con gli altri in palestra. Il tuo progresso è il tuo progresso.",
+"Il metabolismo rallenta con l'età ma è controllabile con massa muscolare e attività.",
+"La mobilità si perde con l'età se non la alleni. Inizia ora.",
+"Gli esercizi di equilibrio sono fondamentali per prevenire cadute negli anziani.",
+"La meditazione e la mindfulness migliorano il recupero dall'esercizio.",
+"Il piede piatto o l'iperpronazione possono causare dolori alle ginocchia e alla schiena.",
+"Non tutti hanno la stessa struttura ossea. Adatta gli esercizi alla tua anatomia.",
+"La genetica influenza il potenziale ma non determina il tuo limite reale.",
+"I tendini si rafforzano più lentamente dei muscoli. Progredisci con prudenza.",
+"Le articolazioni hanno bisogno di movimento per nutrirsi. Il riposo assoluto le indebolisce.",
+"Il collagene è fondamentale per tendini e cartilagini. Vitamina C ne stimola la produzione.",
+"Il grasso corporeo ottimale per performance è diverso da quello ottimale per estetica.",
+"Le donne hanno cicli ormonali che influenzano le performance. Adatta l'allenamento.",
+"L'allenamento in altitudine stimola la produzione di globuli rossi. Gli atleti lo sfruttano.",
+"Il massaggio sportivo accelera il recupero e riduce il rischio di infortuni.",
+"La foam rolling è uno strumento utile ma non sostituisce il riscaldamento attivo.",
+"La velocità di esecuzione influenza il tipo di fibra muscolare stimolata.",
+"Non devi sentirti esausto dopo ogni allenamento. L'obiettivo è stimolare, non distruggere.",
+"Il warm-up mentale conta quanto quello fisico. Preparati prima di entrare in palestra.",
+"Visualizzare l'esecuzione di un esercizio migliora la performance. Lo fanno tutti i top atleti.",
+"La musica aumenta le performance del 10-15%. Scegli playlist energiche per gli allenamenti.",
+"Allenarsi in compagnia aumenta la costanza e la motivazione.",
+"Il meal prep settimanale è uno degli strumenti più efficaci per seguire la dieta.",
+"Non aspettare di essere in forma per iniziare. Inizia per diventare in forma.",
+"La regola del 2% dice: migliora del 2% alla volta. I piccoli passi fanno la differenza.",
+"Il testosterone naturale picca 15-30 minuti dopo l'inizio dell'allenamento.",
+"Il digiuno intermittente funziona principalmente perché riduce le calorie totali.",
+"Non eliminare i carboidrati. Sono il carburante principale per l'esercizio intenso.",
+"I carboidrati semplici sono utili subito dopo l'allenamento per ricaricare il glicogeno.",
+"Il glicogeno muscolare esaurito aumenta il catabolismo. Non allenarti a digiuno troppo a lungo.",
+"La fase di 'bulk' (surplus calorico) permette una crescita muscolare più efficace.",
+"La fase di 'cut' (deficit calorico) non è il momento di ridurre l'allenamento.",
+"I BCAA sono utili se la dieta è povera di proteine. Altrimenti sono spesso superflui.",
+"La glutammina non ha prove solide di efficacia per chi ha un'alimentazione adeguata.",
+"Il ZMA (zinco, magnesio, B6) migliora il sonno e il recupero se sei carente.",
+"Non allenarsi mai con dolore articolare acuto. Distingui il bruciore muscolare dall'infortunio.",
+"Il ghiaccio post-infortunio nelle prime 24-48h riduce l'infiammazione acuta.",
+"Il calore (es. borsa d'acqua calda) è utile per la tensione muscolare cronica.",
+"La fisioterapia preventiva è più economica di quella riabilitativa.",
+"Il sovrallenamento esiste ma è raro. La maggior parte delle persone non si allena abbastanza.",
+"I segnali di sovrallenamento: calo performance, sonno disturbato, irritabilità, battiti elevati a riposo.",
+"La periodizzazione è la pianificazione sistemática dei cicli di allenamento. Funziona.",
+"La periodizzazione lineare: aumenta il peso settimana dopo settimana. Semplice ed efficace per i principianti.",
+"La periodizzazione ondulante: varia intensità e volume nella stessa settimana. Più avanzata.",
+"Gli atleti d'élite si allenano meno di quanto pensi in termini di intensità massimale.",
+"Il recupero attivo (camminata, nuoto leggero) accelera il recupero rispetto al riposo totale.",
+"L'elettrostimolazione (EMS) è uno strumento di supporto, non un sostituto dell'allenamento.",
+"Le gambe allena il cuore quanto il cardio. Lo squat pesante è cardio mascherato.",
+"Il picco di GH (ormone della crescita) avviene nella fase REM del sonno.",
+"Andare a letto alla stessa ora ogni notte ottimizza il ciclo circadiano e il recupero.",
+"La luce blu degli schermi riduce la melatonina. Abbassa lo schermo 1 ora prima di dormire.",
+"Il cortisolo mattutino è naturalmente alto. Sfruttalo per allenamenti intensi mattutini.",
+"Allenarsi la sera non compromette il sonno per la maggior parte delle persone.",
+"La disidratazione dell'1-2% riduce le performance cognitive e fisiche.",
+"Le bevande gassate non idratano bene quanto l'acqua. Non sono equivalenti.",
+"Il sale (sodio) è necessario per la contrazione muscolare. Non eliminarlo completamente.",
+"La dieta chetogenica migliora l'endurance ma riduce la performance ad alta intensità.",
+"Il corpo preferisce bruciare grassi a riposo e carboidrati nell'esercizio intenso.",
+"Il vo2max è uno dei migliori indicatori di salute e longevità. Allenalo.",
+"Gli esercizi pliometrici (salti, balzi) migliorano potenza e agilità.",
+"La corsa fa male alle ginocchia? Solo se eseguita con tecnica errata o progressione sbagliata.",
+"Il nuoto è l'esercizio più completo e a basso impatto articolare.",
+"La bicicletta è ottima per cardio senza impatto sulle articolazioni.",
+"Il pilates migliora la consapevolezza corporea e il controllo del core.",
+"Lo yoga è un ottimo complemento all'allenamento con i pesi.",
+"La ginnastica artistica sviluppa una forza relativa straordinaria.",
+"Il crossfit è efficace ma il rischio di infortuni è più alto. Tecnica prima di tutto.",
+"I powerlifter sono spesso più forti dei bodybuilder. Forza e ipertrofia non sono la stessa cosa.",
+"L'allenamento per la forza pura usa carichi al 85-100% del massimale.",
+"L'allenamento per l'ipertrofia usa carichi al 65-85% del massimale.",
+"L'allenamento per l'endurance muscolare usa carichi sotto il 65% del massimale.",
+"Puoi fare tutto nello stesso mesociclo se pianifichi bene.",
+"Il 1RM (massimale) si stima meglio con test a ripetizioni che con il massimale vero.",
+"Non testare il massimale vero spesso. È un rischio non necessario.",
+"Le catene e le bande elastiche cambiano il profilo di resistenza. Strumenti avanzati ma utili.",
+"Il tempo sotto tensione ottimale per ipertrofia è tra i 30 e i 60 secondi per serie.",
+"Le serie negative (solo fase eccentrica) danno uno stimolo enorme al muscolo.",
+"Le isometriche (tenuta statica) aumentano la forza specifica nell'angolo allenato.",
+"Il contromovimento nello squat usa l'energia elastica. Lo squat pause è più difficile ma più efficace.",
+"Il paused bench press (panca con pausa) migliora la forza di base eliminando il rimbalzo.",
+"La larghezza della presa alla panca cambia il coinvolgimento di petto, spalle e tricipiti.",
+"Lo stacco a gambe rigide (RDL) è più sicuro e specifico dello stacco tradizionale per i femorali.",
+"Il leg press non sostituisce lo squat per lo sviluppo delle gambe. Li complementa.",
+"Il leg extension isola il quadricipite ma stessa la pressione patellare. Usalo con giudizio.",
+"Il face pull è uno degli esercizi più importanti per la salute delle spalle.",
+"Le alzate laterali costruiscono il deltoide laterale. Non esiste altro modo.",
+"Il military press sviluppa la forza verticale di spinta. Fondamentale per atleti.",
+"Le trazioni con presa stretta supina (chin-up) coinvolgono più i bicipiti.",
+"Le trazioni con presa larga prona coinvolgono più i dorsali.",
+"Il rematore bilanciere è il re degli esercizi per la schiena spessa.",
+"Il pulley basso costruisce la schiena con un angolo diverso. Complementare al rematore.",
+"Lo stacco da terra attiva più gruppi muscolari di qualsiasi altro esercizio.",
+"L'hip thrust è il miglior esercizio per i glutei. I dati EMG lo confermano.",
+"Il Bulgarian split squat è difficile ma straordinario per gambe e glutei.",
+"La leg press a piedi alti coinvolge più i glutei e i femorali.",
+"I calf sono resistenti. Hanno bisogno di alti volumi e ROM completo.",
+"Il sit-up tradizionale non è ideale per il core. Preferisci plank e varianti.",
+"Il dead bug è uno degli esercizi di core più sicuri ed efficaci.",
+"La pallof press allena la stabilità anti-rotazionale del core.",
+"Il dragon flag è un esercizio avanzato di core usato dai ginnasti.",
+"Non dimenticare i muscoli posteriori della spalla. Prevengono infortuni.",
+"I muscoli della cuffia dei rotatori proteggono la spalla. Allena rotazione interna ed esterna.",
+"Le alzate frontali non sono necessarie se già fai military press e panca inclinata.",
+"I dips sono un esercizio completo per petto, spalle anteriori e tricipiti.",
+"Le push-up hanno infinite varianti. Dal principiante all'esperto c'è sempre una sfida.",
+"La trazione a un braccio è il test di forza relativa più impressionante.",
+"Il pistol squat (squat su una gamba) richiede forza, mobilità ed equilibrio.",
+"L'handstand push-up è il military press del calisthenics.",
+"Il muscle-up combina trazione e dip. Richiede potenza esplosiva.",
+"Il flag umano è uno degli skill più belli del calisthenics. Richiede mesi di lavoro.",
+"Non tutto deve essere pesante. Il calisthenics insegna il controllo del corpo.",
+"Il peso corporeo non è un limite. Molti atleti di calisthenics sono più forti di chi usa i pesi.",
+"Imparare nuovi movimenti mantiene il cervello giovane e il corpo coordinato.",
+"L'allenamento in acqua riduce del 90% il peso corporeo sulle articolazioni.",
+"Il tai chi migliora l'equilibrio negli anziani riducendo il rischio di cadute del 45%.",
+"La danza è allenamento. Ritmo, coordinazione, resistenza e benessere mentale.",
+"Il tennis è uno sport completo: resistenza, esplosività, coordinazione occhio-mano.",
+"Il basket migliora salti, agilità e resistenza aerobica in modo divertente.",
+"Il calcio fa correre mediamente 10-13 km a partita. Cardio mascherato da divertimento.",
+"Le arti marziali insegnano disciplina, rispetto e controllo del corpo.",
+"Il ciclismo outdoor aggiunge la variabile del terreno che la bici indoor non può replicare.",
+"L'escursionismo in montagna brucia calorie e riduce lo stress in modo straordinario.",
+"Il giardinaggio è attività fisica. I nonni lo sapevano già.",
+"Salire le scale al posto dell'ascensore è il micro-workout più sottovalutato.",
+"Parcheggia lontano. 1000 passi extra al giorno fanno differenza nel lungo termine.",
+"I 10.000 passi al giorno sono un obiettivo utile ma il numero non è magico.",
+"Stare in piedi brucia il 20% in più di calorie rispetto a stare seduti.",
+"Le scrivanie regolabili in altezza (standing desk) migliorano la postura e l'energia.",
+"La pausa attiva ogni 45-60 minuti di lavoro seduto migliora la circolazione.",
+"Il tempo seduto è un rischio indipendente dall'esercizio. Muoviti spesso durante il giorno.",
+"Un cane ti obbliga a camminare. È uno dei migliori motivatori per l'attività fisica.",
+"Il giocare con i bambini è un ottimo workout. Non è meno valido perché divertente.",
+"Non serve la palestra. Un parco, una borsa zaino e il proprio peso corporeo bastano.",
+"I movimenti funzionali replicano le attività della vita quotidiana. Sono i più importanti.",
+"Sollevare la spesa, salire le scale, portare i bambini: tutto conta come attività fisica.",
+"Il futuro self ti ringrazierà per ogni seduta che fai oggi. Investi ora.",
+"Non esiste la pillola magica. L'unica scorciatoia è la consistenza.",
+"La disciplina batte la motivazione. La motivazione va e viene, la disciplina resta.",
+"Inizia piccolo. 10 minuti al giorno sono infinitamente meglio di zero.",
+"Il successo in palestra è fatto di mille scelte banali fatte bene ogni giorno.",
+"Trova un'attività che ami. Il miglior allenamento è quello che fai davvero.",
+"Il tuo corpo è la macchina più sofisticata del pianeta. Trattalo di conseguenza.",
+"Non ci sono scuse sufficienti per non muoversi. Ci sono solo priorità che puoi cambiare.",
+"L'allenamento non è una punizione per ciò che hai mangiato. È un regalo che fai a te stesso.",
+"Ogni rep, ogni passo, ogni scelta sana è un voto per la versione migliore di te.",
+"Non perderti nel perfetto. Il buono fatto con costanza vale più del perfetto fatto una volta.",
+"Il corpo umano è progettato per muoversi. Stare fermi è innaturale.",
+"Il movimento è medicina. Le ricerche lo confermano ogni giorno.",
+"L'esercizio fisico regolare riduce il rischio di oltre 35 malattie croniche.",
+"Invecchiare bene si pianifica giovani. L'investimento in salute è il migliore che esiste.",
+"La forza è la qualità fisica più importante da mantenere con l'età.",
+"Un anziano forte è un anziano indipendente. La forza è libertà.",
+"Non è mai troppo tardi per iniziare. Persone di 90 anni hanno guadagnato massa muscolare.",
+"Il tuo limite più grande non è fisico. È mentale. Lavoraci.",
+"Credi in te. Il corpo fa quello che la mente gli permette di immaginare.",
+"Celebra i piccoli traguardi. Ogni kg in più sul bilanciere è una vittoria.",
+"Sii paziente con te stesso. I cambiamenti fisici richiedono tempo che vale ogni secondo.",
+"La salute non è tutto, ma senza salute tutto il resto diventa secondario.",
+"Prendersi cura del proprio corpo non è vanità. È rispetto per se stessi.",
+"Il fitness non è una destinazione. È un modo di vivere.",
+"Non smettere quando sei stanco. Smetti quando hai finito.",
+"Il dolore di oggi è la forza di domani. Ma distingui il dolore buono da quello cattivo.",
+"Ogni sessione di allenamento è una vittoria contro la versione pigra di te.",
+"L'eccellenza non è un atto ma un'abitudine. Allenati come vorresti essere.",
+"Hai già fatto il passo più difficile: iniziare. Continua.",
+"Un anno fa avresti voluto essere dove sei ora. Tra un anno vorrai essere dove puoi arrivare oggi.",
+"Non aspettare le condizioni perfette. Allenati con ciò che hai, dove sei, adesso.",
+"Il corpo realizza ciò che la mente crede. Allenati anche nella testa.",
+"Fai del tuo meglio ogni giorno. Il meglio di oggi potrebbe essere diverso da ieri e va bene.",
+"La coerenza costruisce il carattere tanto quanto il fisico.",
+"Sorridi mentre ti alleni. Il corpo risponde all'umore positivo.",
+"L'allenamento è il momento più egoista della giornata — nel senso migliore. È tuo.",
+"Ogni goccia di sudore è il tuo corpo che cambia. Abbracciala.",
+"Non confrontarti con chi era ieri. Confrontati con chi vuoi essere domani.",
+"La forma fisica è la piattaforma su cui costruire tutto il resto della vita.",
+"Muoviti ogni giorno. Non per come appari ma per come ti senti.",
+"Il corpo non mente. Ascoltalo, rispettalo, sfidalo.",
+"Allena il corpo che hai, non quello che vorresti avere. Da lì si parte.",
+"La determinazione è la distanza tra chi vuoi essere e chi sei ora.",
+"Ogni allenamento è un passo avanti. Anche nei giorni in cui non sembra.",
+"Non devi essere estremo. Sii consistente.",
+"La salute è ricchezza. Investila meglio di qualsiasi azione in borsa.",
+"Il tuo futuro self ti sta guardando. Non deluderlo.",
+"COMODO.fit è qui per guidarti ogni passo. Tu devi solo presentarti.",
+];
+
+function initConsiglio(){
+  var oggi=new Date();
+  var giornoDellAnno=Math.floor((oggi-new Date(oggi.getFullYear(),0,0))/(1000*60*60*24));
+  var idx=((giornoDellAnno-1)%365+365)%365;
+  var txt=document.getElementById('consiglio-txt');
+  var num=document.getElementById('consiglio-num');
+  if(txt)txt.textContent=CONSIGLI[idx]||CONSIGLI[0];
+  if(num)num.textContent='#'+( idx+1)+' / 365';
+}
+
 // INIT
 function init(){
   load();
   if(localStorage.getItem('cf_welcomed')){
     document.getElementById('sw').style.display='none';
-    if(S.profilo){goTo('home');}
-    else{startOnb();}
+    if(S.profilo){goTo('home');initConsiglio();}else{startOnb();initConsiglio();}
   }
 }
 init();
