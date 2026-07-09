@@ -854,7 +854,29 @@ function openChat(from){
   chatFrom=from||'home';
   if(!chatHistory.length){
     var p=S.profilo||{};
-    chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI, il tuo coach personale. Conosco il tuo profilo: '+(p.livello||'-')+', '+(p.eta||'-')+' anni, '+(p.peso||'-')+' kg. Chiedimi qualsiasi cosa su allenamento, nutrizione, recupero o i tuoi progressi.'}];
+    var welcomeMsg='Ciao! Sono COMODO AI. ';
+    if(from==='home'&&S.storico.length){
+      var ult=S.storico[S.storico.length-1];
+      var dt=new Date(ult.dataISO+'T00:00:00');
+      var giorni=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+      var giorno=giorni[dt.getDay()];
+      var esNomi=ult.esercizi.slice(0,3).map(function(e){return e.nome;}).join(', ');
+      var recap='Ultimo allenamento: '+ult.giornoNome+' ('+esNomi+(ult.esercizi.length>3?' e altri...':'')+').';welcomeMsg+=recap;
+      chatHistory=[{role:'assistant',content:welcomeMsg,loading:false}];
+      renderChatMsgs();
+      // Genera consiglio AI basato sull'ultimo allenamento
+      var prompt='Sei COMODO AI. L\'utente ha livello '+( p.livello||'intermedio')+', '+( p.eta||'')+' anni, '+(p.peso||'')+' kg. Ultimo allenamento: '+ult.giornoNome+' - esercizi: '+ult.esercizi.map(function(e){var sl=e.serieLog&&e.serieLog[0];return e.nome+(sl?' ('+(sl.kg>0?sl.kg+' kg':'BW')+' x'+sl.rip+')':'');}).join(', ')+'. In base a questo, dai un consiglio brevissimo (2-3 frasi max): quando allenarsi prossima volta, cosa prioritizzare, come recuperare. Tono diretto e motivante.';
+      callAI(prompt,200).then(function(r){
+        chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI. '+recap+' '+r+' Chiedimi qualsiasi cosa!'}];
+
+      }).catch(function(){
+        chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI. Chiedimi qualsiasi cosa su allenamento, recupero o nutrizione!'}];
+        renderChatMsgs();
+      });
+    } else {
+      welcomeMsg+='Nessun allenamento registrato ancora. Inizia con una scheda e poi torna qui per consigli personalizzati!';
+      chatHistory=[{role:'assistant',content:welcomeMsg}];
+    }
   }
   // Nascondi tutto
   document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
