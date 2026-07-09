@@ -741,7 +741,7 @@ function renderSES(){
   let ultH='';if(ult)ultH='<div class="cdsm" style="margin-bottom:14px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Ultima sessione · '+ult.data+'</p><div style="display:flex;gap:24px;"><div><p style="font-size:10px;color:var(--mu);">Peso</p><p class="ow" style="font-size:20px;font-weight:700;">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p></div><div><p style="font-size:10px;color:var(--mu);">Serie</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.serie+'</p></div><div><p style="font-size:10px;color:var(--mu);">Rip</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.rip+'</p></div></div>'+(ult.note?'<p style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+ult.note+'</p>':'')+'</div>';
   const pr=es.serieLog.findIndex(s=>!s.comp);const sc=es.serieLog.filter(s=>s.comp).length;
   let serH='';
-  es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><span id="sv'+si+'k">'+s.kg+'</span><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><span id="sv'+si+'r">'+s.rip+'</span><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
+  es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><span id="sv'+si+'k" type="number" value="'+s.kg+'" oninput="setS('+si+',\'kg\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><span id="sv'+si+'r" type="number" value="'+s.rip+'" oninput="setS('+si+',\'rip\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
   const tutteOk=es.serieLog.every(s=>s.comp);
   var ctaH='';
   if(tutteOk){
@@ -752,7 +752,17 @@ function renderSES(){
   document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;"><div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div><div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div><div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'+aiH+ultH+'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie — '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div><div style="background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Note / Domande</p><button onclick="openChat(\'sessione\')" style="background:none;border:1px solid rgba(246,177,0,.35);border-radius:14px;padding:4px 10px;color:var(--y);font-size:11px;font-family:Oswald;font-weight:600;cursor:pointer;">✦ COMODO AI</button></div><textarea id="note-ta" rows="3" placeholder="Come è andata? Fatica, dolori, domande..." style="background:transparent;border:none;padding:0;margin:0;width:100%;resize:none;outline:none;color:var(--w);font-family:Inter;font-size:13px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea></div>'+ctaH+'</div>';
 }
 function jumpEs(i){SES.idx=i;renderSES();}
-function chgS(si,c,d){const s=SES.esercizi[SES.idx].serieLog[si];s[c]=+(Math.max(c==='rip'?1:0,s[c]+d)).toFixed(2);const el=document.getElementById('sv'+si+(c==='kg'?'k':'r'));if(el)el.textContent=s[c];}
+function chgS(si,campo,d){
+  var s=SES.esercizi[SES.idx].serieLog[si];
+  s[campo]=+(Math.max(campo==='rip'?1:0,s[campo]+d)).toFixed(2);
+  var el=document.getElementById('sv'+si+(campo==='kg'?'k':'r'));
+  if(el)el.value=s[campo];
+}
+function setS(si,campo,val){
+  var v=parseFloat(val)||0;
+  if(v<0)v=0;
+  SES.esercizi[SES.idx].serieLog[si][campo]=+v.toFixed(2);
+}
 function compS(si){const es=SES.esercizi[SES.idx];es.serieLog[si].comp=true;if(es.serieLog.every(s=>s.comp))es.comp=true;renderSES();if(SET.timerOn)startTimer();setTimeout(()=>{const n=document.getElementById('sc'+(si+1));if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},300);}
 function uncompS(si){const es=SES.esercizi[SES.idx];es.serieLog[si].comp=false;es.comp=false;renderSES();}
 function addS(){const es=SES.esercizi[SES.idx];const u=es.serieLog[es.serieLog.length-1];es.serieLog.push({kg:u?.kg??es.tKg,rip:u?.rip??es.tR,comp:false});renderSES();}
@@ -805,7 +815,35 @@ function setND(v){SET.notifDays=v;saveSet();renderSet();}
 function renderSet(){const tt=document.getElementById('tog-timer');const tn=document.getElementById('tog-notif');const te=document.getElementById('trainer-email');if(tt)tt.className='tog'+(SET.timerOn?' on':'');if(tn)tn.className='tog'+(SET.notifOn?' on':'');if(te)te.value=SET.trainerEmail||'';const tdV=[60,90,120,180,240];document.getElementById('seg-timer')?.querySelectorAll('.segb').forEach((b,i)=>b.className='segb'+(SET.timerDur===tdV[i]?' on':''));document.getElementById('seg-notif')?.querySelectorAll('.segb').forEach((b,i)=>b.className='segb'+(SET.notifDays===(i+1)?' on':''));}
 
 // TIMER
-function startTimer(){stopTimer(true);timerRem=SET.timerDur;document.getElementById('timer-ov').classList.add('on');document.getElementById('timer-ov').onclick=stopTimer;updateTUI();timerInt=setInterval(()=>{timerRem--;updateTUI();if(timerRem<=0){stopTimer();timerDone();}},1000);}
+var timerEndTime=null;
+
+function startTimer(){
+  stopTimer(true);
+  timerEndTime=Date.now()+(SET.timerDur*1000);
+  timerRem=SET.timerDur;
+  document.getElementById('timer-ov').classList.add('on');
+  document.getElementById('timer-ov').onclick=stopTimer;
+  updateTUI();
+  timerInt=setInterval(function(){
+    timerRem=Math.round((timerEndTime-Date.now())/1000);
+    if(timerRem<=0){stopTimer();timerDone();return;}
+    updateTUI();
+  },500);
+}
+
+// Quando l'app torna in foreground, aggiorna il timer
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&timerEndTime){
+    var rem=Math.round((timerEndTime-Date.now())/1000);
+    if(rem<=0){
+      stopTimer();
+      timerDone();
+    } else {
+      timerRem=rem;
+      updateTUI();
+    }
+  }
+});
 function updateTUI(){const pct=timerRem/SET.timerDur;const off=502*(1-pct);const p=document.getElementById('tprog');if(p){p.style.strokeDashoffset=off;p.style.stroke=timerRem<=10?'var(--re)':'var(--y)';}const m=Math.floor(timerRem/60),s=timerRem%60;const tn=document.getElementById('tnum');if(tn){tn.textContent=m+':'+(s<10?'0':'')+s;tn.style.color=timerRem<=10?'var(--re)':'var(--w)';}}
 function stopTimer(s){clearInterval(timerInt);timerInt=null;document.getElementById('timer-ov').classList.remove('on');}
 function timerDone(){if(navigator.vibrate)navigator.vibrate([200,100,200]);if(SET.notifOn&&Notification.permission==='granted')new Notification('COMODO.fit',{body:'Recupero finito! Prossima serie 💪'});}
