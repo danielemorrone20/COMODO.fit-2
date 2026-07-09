@@ -469,15 +469,36 @@ function renderNS(){
     html+='<button class="btn bs" style="margin-top:8px;" onclick="nsStep=2;renderNS()">← Indietro</button>';
     b.innerHTML=html;
   }else if(nsStep===4){
-    if(!nsData.giorni)nsData.giorni=[{id:'A',nome:'Giorno A',esercizi:[]}];
-    let html='<div style="margin-bottom:16px;"><label style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Nome scheda</label><input type="text" id="ns-nome" placeholder="es. La mia scheda" value="'+(nsData.nome||'')+'" oninput="nsData.nome=this.value"></div>';
-    nsData.giorni.forEach(function(g,gi){
-      html+='<div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><input type="text" value="'+g.nome+'" oninput="nsData.giorni['+gi+'].nome=this.value" style="font-family:Oswald;font-size:15px;font-weight:600;background:none;border:none;outline:none;color:var(--y);padding:0;width:auto;">'+(nsData.giorni.length>1?'<button onclick="rmG('+gi+')" style="background:none;border:none;color:var(--re);font-size:13px;cursor:pointer;">Rimuovi</button>':'')+'</div>';
-      g.esercizi.forEach(function(e,ei){html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd);"><span style="font-size:13px;flex:1;">'+e.nome+'</span><span style="font-size:11px;color:var(--mu);">'+e.muscolo+'</span><button onclick="rmE('+gi+','+ei+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button></div>';});
-      html+='<button onclick="showAddEs('+gi+')" style="margin-top:10px;background:none;border:1px dashed var(--brd);border-radius:8px;color:var(--mu);font-size:13px;padding:8px;cursor:pointer;width:100%;">+ Aggiungi esercizio</button></div>';
-    });
-    html+='<button class="btn bs" style="margin-bottom:8px;" onclick="addG()">+ Aggiungi giorno</button><button class="btn bp" style="margin-bottom:8px;" onclick="saveCustom()">Salva scheda</button><button class="btn bs" onclick="nsStep=0;renderNS()">← Indietro</button>';
+    // Chat AI per creare scheda da zero
+    var chatMsgs=nsData.aiChat||[];
+    var html='';
+    if(!chatMsgs.length){
+      html+='<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:12px;padding:14px;margin-bottom:16px;">'
+        +'<p class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">✦ COMODO AI</p>'
+        +'<p style="font-size:14px;line-height:1.6;">Descrivi la scheda che vuoi creare. Puoi scrivere liberamente, per esempio: "Giorno di petto e tricipiti, voglio panca piana, panca inclinata, dips e skull crusher, 4 serie ognuno."</p>'
+        +'</div>';
+    } else {
+      chatMsgs.forEach(function(m){
+        var isUser=m.role==='user';
+        html+='<div style="display:flex;'+(isUser?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:10px;">'
+          +'<div class="'+(isUser?'cb-u':'cb-a')+'" style="'+(m.loading?'color:var(--mu);font-style:italic;':'')+'">'+(m.content||'')+'</div></div>';
+      });
+    }
+    html+='<div style="display:flex;gap:8px;margin-top:12px;">'
+      +'<input type="text" id="ns-ai-input" placeholder="Descrivi la tua scheda..." style="flex:1;" onkeydown="if(event.key===\'Enter\')inviaDescrizioneScheda()">'
+      +'<button onclick="inviaDescrizioneScheda()" style="background:var(--y);border:none;border-radius:8px;width:42px;height:42px;cursor:pointer;font-size:18px;color:#111;flex-shrink:0;">↑</button>'
+      +'</div>';
+    if(nsData.schedaGenerata){
+      html+='<div style="margin-top:16px;background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:10px;padding:12px;margin-bottom:12px;">'
+        +'<p style="font-size:13px;color:var(--gr);margin-bottom:8px;">✓ Scheda generata — puoi modificarla dopo averla salvata</p>'
+        +'<button class="btn bp" onclick="salvaDaAI()">Salva scheda →</button>'
+        +'</div>';
+    }
+    html+='<button class="btn bs" style="margin-top:8px;" onclick="nsStep=0;renderNS()">← Indietro</button>';
     b.innerHTML=html;
+    if(!chatMsgs.length&&!nsData.schedaGenerata){
+      setTimeout(function(){var inp=document.getElementById('ns-ai-input');if(inp)inp.focus();},200);
+    }
   }
 }
 function chatAns(oi){const qi=nsQ.chatStep||0;if(qi>=CHAT_Q.length)return;const d=CHAT_Q[qi];nsQ.chatAnswers[d.id]=d.op[oi];nsQ.chatStep=qi+1;renderNS();}
@@ -485,6 +506,45 @@ function addTemplate(key){const t=JSON.parse(JSON.stringify(PROG[key]));t.giorni
 function addG(){const ids=['A','B','C','D','E','F'];const i=nsData.giorni.length;nsData.giorni.push({id:ids[i]||String(i+1),nome:'Giorno '+(ids[i]||i+1),esercizi:[]});renderNS();}
 function rmG(gi){nsData.giorni.splice(gi,1);renderNS();}
 function rmE(gi,ei){nsData.giorni[gi].esercizi.splice(ei,1);renderNS();}
+
+async function inviaDescrizioneScheda(){
+  var inp=document.getElementById('ns-ai-input');
+  if(!inp)return;
+  var txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  if(!nsData.aiChat)nsData.aiChat=[];
+  nsData.aiChat.push({role:'user',content:txt});
+  nsData.aiChat.push({role:'assistant',content:'Sto creando la tua scheda...',loading:true});
+  renderNS();
+  var p=S.profilo||{};
+  var sys='Sei COMODO AI. L utente vuole creare una scheda di allenamento. Livello: '+(p.livello||'intermedio')+', '+(p.eta||'')+' anni. Genera una scheda strutturata in formato JSON con questa struttura esatta: {"nome":"Nome scheda","giorni":[{"id":"A","nome":"Nome giorno","esercizi":[{"nome":"Nome esercizio","muscolo":"Gruppo muscolare","kgInizio":0,"serieInizio":3,"ripInizio":10}]}]}. Rispondi SOLO con il JSON, nessun testo prima o dopo.';
+  try{
+    var r=await callAI(txt,800,sys);
+    nsData.aiChat=nsData.aiChat.filter(function(m){return !m.loading;});
+    // Parse JSON
+    var clean=r.replace(/```json/g,'').replace(/```/g,'').trim();
+    var scheda=JSON.parse(clean);
+    scheda.giorni.forEach(function(g){g.esercizi.forEach(function(e){e.storia=[];});});
+    nsData.schedaGenerata=scheda;
+    nsData.aiChat.push({role:'assistant',content:'Scheda creata! Ho preparato "'+scheda.nome+'" con '+scheda.giorni.length+' giorno/i. Puoi salvarla o descrivere modifiche.'});
+  }catch(e){
+    nsData.aiChat=nsData.aiChat.filter(function(m){return !m.loading;});
+    nsData.aiChat.push({role:'assistant',content:'Non sono riuscito a interpretare la scheda. Prova a descriverla in modo piu dettagliato, per esempio: "Giorno di gambe con squat 4x8, leg press 3x12 e leg curl 3x12."'});
+  }
+  renderNS();
+}
+
+function salvaDaAI(){
+  if(!nsData.schedaGenerata)return;
+  var scheda=nsData.schedaGenerata;
+  scheda.desc='Creata con COMODO AI';
+  S.schede.push(scheda);
+  save();
+  closeMoNew();
+  renderHome();
+}
+
 function saveCustom(){S.schede.push({nome:nsData.nome||'La mia scheda',desc:'Personalizzata',giorni:nsData.giorni});save();closeMoNew();renderHome();}
 
 // ADD ESERCIZIO
