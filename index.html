@@ -143,7 +143,12 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
     <p class="ow" style="font-size:18px;font-weight:600;">Le mie schede</p>
     <button onclick="showNewScheda()" style="background:none;border:none;color:var(--y);font-family:Oswald;font-size:13px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;">+ Nuova</button>
   </div>
-  <div id="hschede" style="margin-bottom:24px;"></div>
+  <div id="hschede" style="margin-bottom:16px;"></div>
+  <button onclick="avviaLibero()" style="width:100%;background:none;border:1.5px solid var(--brd);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:20px;text-align:left;">
+    <span style="font-size:22px;">⚡</span>
+    <div><p class="ow" style="font-size:15px;font-weight:600;color:var(--w);">Allenamento libero</p>
+    <p style="font-size:12px;color:var(--mu);margin-top:2px;">Scegli gli esercizi che vuoi fare oggi</p></div>
+  </button>
   <div id="hrec"></div>
   <div id="consiglio-home" style="margin-top:20px;background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -187,6 +192,28 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
 
 <!-- SESSIONE -->
 <div id="screen-sessione" class="scr" style="padding:0;"></div>
+
+<!-- ALLENAMENTO LIBERO -->
+<div id="screen-libero" class="scr">
+  <div class="ph">
+    <button class="bk" onclick="goTo('home')">‹</button>
+    <div style="flex:1;">
+      <p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Oggi</p>
+      <h2 class="ow" style="font-size:24px;font-weight:700;">Allenamento libero</h2>
+    </div>
+    <button onclick="iniziaLibero()" id="btn-inizia-libero" style="background:var(--y);border:none;border-radius:8px;padding:8px 14px;color:#111;font-family:Oswald;font-size:13px;font-weight:600;cursor:pointer;display:none;">Inizia →</button>
+  </div>
+  <!-- Cerca esercizi -->
+  <div style="position:relative;margin-bottom:16px;">
+    <input type="text" id="libero-search" placeholder="Cerca o aggiungi esercizio..." oninput="cercaEsLibero(this.value)" style="padding-left:36px;">
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mu);font-size:16px;">🔍</span>
+  </div>
+  <div id="libero-risultati" style="margin-bottom:16px;"></div>
+  <div id="libero-selezionati">
+    <p class="ow" style="font-size:15px;font-weight:600;margin-bottom:10px;" id="libero-sel-title" style="display:none;">Esercizi selezionati</p>
+    <div id="libero-lista"></div>
+  </div>
+</div>
 
 <!-- COMPLETATO -->
 <div id="screen-completato" class="scr">
@@ -311,6 +338,26 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
   <div id="mo-new-body"></div></div>
 </div>
 
+<!-- MODAL MODIFICA SERIE -->
+<div id="mo-modifica-serie" class="mo" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="mb">
+    <div class="mh"></div>
+    <p class="ow" style="font-size:18px;font-weight:700;margin-bottom:20px;">Modifica serie</p>
+    <div style="display:flex;gap:12px;margin-bottom:20px;">
+      <div style="flex:1;">
+        <label style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Peso (kg)</label>
+        <input type="number" id="mod-kg" inputmode="decimal" min="0" style="text-align:center;font-size:24px;font-family:Oswald;font-weight:700;">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Ripetizioni</label>
+        <input type="number" id="mod-rip" inputmode="numeric" min="1" style="text-align:center;font-size:24px;font-family:Oswald;font-weight:700;">
+      </div>
+    </div>
+    <button class="btn bp" onclick="salvaModificaSerie()">Salva</button>
+    <button class="btn bs" style="margin-top:8px;" onclick="document.getElementById('mo-modifica-serie').classList.remove('on')">Annulla</button>
+  </div>
+</div>
+
 <!-- MODAL ESERCIZI -->
 <div id="mo-es" class="mo" onclick="if(event.target===this)this.classList.remove('on')">
   <div class="mb"><div class="mh"></div><div id="mo-es-body"></div></div>
@@ -353,6 +400,7 @@ function goTo(sc){
   const tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
   if(tab[sc])document.querySelector('[data-t="'+tab[sc]+'"]')?.classList.add('on');
   if(sc==='home'){renderHome();initConsiglio();}
+  if(sc==='libero'){renderLibero();}
   if(sc==='storico')renderCal();
   if(sc==='profilo')renderProfilo();
   if(sc==='impostazioni')renderSet();
@@ -781,7 +829,7 @@ function avviaSessione(gi){
   SES={esercizi:giorno.esercizi.map(function(e){
     const prog=calcProg(e.storia||[],lv);
     const ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
-    const tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));
+    const tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));
     const tS=prog?prog.serie:(ult?ult.serie:(e.serieInizio||3));
     const tR=prog?prog.rip:(ult?ult.rip:(e.ripInizio||10));
     const obj=Object.assign({},e,{progAI:prog,tKg:tKg,tS:tS,tR:tR,comp:false,note:'',
@@ -801,7 +849,7 @@ function renderSES(){
   let ultH='';if(ult)ultH='<div class="cdsm" style="margin-bottom:14px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Ultima sessione · '+ult.data+'</p><div style="display:flex;gap:24px;"><div><p style="font-size:10px;color:var(--mu);">Peso</p><p class="ow" style="font-size:20px;font-weight:700;">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p></div><div><p style="font-size:10px;color:var(--mu);">Serie</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.serie+'</p></div><div><p style="font-size:10px;color:var(--mu);">Rip</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.rip+'</p></div></div>'+(ult.note?'<p style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+ult.note+'</p>':'')+'</div>';
   const pr=es.serieLog.findIndex(s=>!s.comp);const sc=es.serieLog.filter(s=>s.comp).length;
   let serH='';
-  es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><input id="sv'+si+'k" type="number" value="'+(s.kg||0)+'" placeholder="0" inputmode="decimal" min="0" oninput="setS('+si+',\'kg\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><input id="sv'+si+'r" type="number" value="'+(s.rip||10)+'" placeholder="10" inputmode="numeric" min="1" oninput="setS('+si+',\'rip\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
+  es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><input id="sv'+si+'k" type="number" value="'+(s.kg||0)+'" placeholder="0" inputmode="decimal" min="0" oninput="setS('+si+',\'kg\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><input id="sv'+si+'r" type="number" value="'+(s.rip||10)+'" placeholder="10" inputmode="numeric" min="1" oninput="setS('+si+',\'rip\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);cursor:pointer;" onclick="modificaSerie('+si+')">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip ✎</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
   const tutteOk=es.serieLog.every(s=>s.comp);
   var ctaH='';
   if(tutteOk){
@@ -831,7 +879,26 @@ async function chiediAISes(){const es=SES.esercizi[SES.idx];const btn=document.g
 function avanzaEs(){if(SES.idx<SES.esercizi.length-1){SES.idx++;renderSES();document.getElementById('screen-sessione').scrollTop=0;}else concludi();}
 function concludi(){
   const oggi=new Date();const iso=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
-  SES.esercizi.forEach(e=>{const esS=scAttiva.giorni.find(g=>g.id===giorno.id)?.esercizi.find(x=>x.nome===e.nome);if(esS){if(!esS.storia)esS.storia=[];const kgM=e.serieLog.length?+(e.serieLog.reduce((s,x)=>s+x.kg,0)/e.serieLog.length).toFixed(2):e.tKg;const rM=e.serieLog.length?Math.round(e.serieLog.reduce((s,x)=>s+x.rip,0)/e.serieLog.length):e.tR;esS.storia.push({data:iso,kg:kgM,serie:e.serieLog.length,rip:rM,note:e.note||''});}});
+  SES.esercizi.forEach(function(e){
+    var kgM=e.serieLog.length?+(e.serieLog.reduce(function(s,x){return s+x.kg;},0)/e.serieLog.length).toFixed(2):e.tKg;
+    var rM=e.serieLog.length?Math.round(e.serieLog.reduce(function(s,x){return s+x.rip;},0)/e.serieLog.length):e.tR;
+    var entry={data:iso,kg:kgM,serie:e.serieLog.length,rip:rM,note:e.note||''};
+    // Aggiorna storia nella scheda (se non è sessione libera)
+    if(scIdx>=0){
+      var esS=scAttiva.giorni.find(function(g){return g.id===giorno.id;});
+      esS=esS?esS.esercizi.find(function(x){return x.nome===e.nome;}):null;
+      if(esS){if(!esS.storia)esS.storia=[];esS.storia.push(entry);}
+    } else {
+      // Sessione libera - aggiorna storia nelle schede dove l'esercizio esiste
+      S.schede.forEach(function(sc){
+        sc.giorni.forEach(function(g){
+          g.esercizi.forEach(function(es){
+            if(es.nome===e.nome){if(!es.storia)es.storia=[];es.storia.push(entry);}
+          });
+        });
+      });
+    }
+  });
   S.storico.push({dataISO:iso,schedaId:scIdx,giornoId:giorno.id,giornoNome:giorno.nome,esercizi:SES.esercizi.map(e=>({nome:e.nome,muscolo:e.muscolo,note:e.note||'',serieLog:e.serieLog.map(s=>({kg:s.kg,rip:s.rip}))}))});
   save();lastSes={giornoNome:giorno.nome,esercizi:SES.esercizi};
   document.getElementById('comp-sub').textContent=giorno.nome+' — '+oggi.toLocaleDateString('it-IT');
@@ -1012,6 +1079,27 @@ async function sendChat(){
   renderChatMsgs();
 }
 
+
+
+// MODIFICA SERIE COMPLETATA
+var _modSerie = -1;
+function modificaSerie(si){
+  _modSerie = si;
+  var s = SES.esercizi[SES.idx].serieLog[si];
+  document.getElementById('mod-kg').value = s.kg || 0;
+  document.getElementById('mod-rip').value = s.rip || 0;
+  document.getElementById('mo-modifica-serie').classList.add('on');
+}
+function salvaModificaSerie(){
+  if(_modSerie < 0) return;
+  var kg = parseFloat(document.getElementById('mod-kg').value) || 0;
+  var rip = parseInt(document.getElementById('mod-rip').value) || 0;
+  SES.esercizi[SES.idx].serieLog[_modSerie].kg = kg;
+  SES.esercizi[SES.idx].serieLog[_modSerie].rip = rip;
+  document.getElementById('mo-modifica-serie').classList.remove('on');
+  _modSerie = -1;
+  renderSES();
+}
 
 // AI HELPER
 async function callAI(prompt,maxTok,sys,prev){
