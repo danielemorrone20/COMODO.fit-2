@@ -389,15 +389,15 @@ function resetApp(){if(!confirm('Cancellare tutti i dati?'))return;localStorage.
 
 // NAVIGATION
 function goTo(sc){
-  document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
   document.getElementById('screen-chat').style.display='none';
-  const noNav=['sessione','completato','chat'];
+  var noNav=['sessione','completato','chat','libero'];
   document.getElementById('bnav').style.display=noNav.includes(sc)?'none':'flex';
-  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
-  if(sc==='chat'){const cc=document.getElementById('screen-chat');cc.style.display='flex';document.getElementById('bnav').style.display='none';setTimeout(()=>{const m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;const inp=document.getElementById('chat-in');if(inp)inp.focus();},150);return;}
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
+  if(sc==='chat'){var cc=document.getElementById('screen-chat');cc.style.display='flex';document.getElementById('bnav').style.display='none';setTimeout(()=>{const m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;const inp=document.getElementById('chat-in');if(inp)inp.focus();},150);return;}
   const el=document.getElementById('screen-'+sc);
   if(el){el.classList.add('on');el.scrollTop=0;}
-  const tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
+  var tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni',libero:''};
   if(tab[sc])document.querySelector('[data-t="'+tab[sc]+'"]')?.classList.add('on');
   if(sc==='home'){renderHome();initConsiglio();}
   if(sc==='libero'){renderLibero();}
