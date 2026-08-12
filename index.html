@@ -365,25 +365,28 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
 
 </div>
 
-<script>
-const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const MESI_S=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-const GG=['Lu','Ma','Me','Gi','Ve','Sa','Do'];
-
-let S={profilo:null,schede:[],storico:[]};
-let SET={timerOn:true,timerDur:90,notifOn:false,notifDays:2,trainerEmail:''};
-let calM=new Date().getMonth(),calY=new Date().getFullYear(),calSel=null;
-let SES=null,scAttiva=null,scIdx=0,giorno=null;
-let esNome='',esGi=0,esTab_='sets';
-let chatHist=[],chatFrom='home';
-let lastSes=null;
-let nsStep=0,nsData={},nsQ={};
-let addEsGi=0;
-let timerInt=null,timerRem=0;
+<script>// DATA
+var MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+var MESI_S=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+var GG=['Lu','Ma','Me','Gi','Ve','Sa','Do'];
+var S={profilo:null,schede:[],storico:[]};
+var SET={timerOn:true,timerDur:90,notifOn:false,notifDays:2,trainerEmail:''};
+var calM=new Date().getMonth(),calY=new Date().getFullYear(),calSel=null;
+var SES=null,scAttiva=null,scIdx=0,giorno=null;
+var esNome='',esGi=0,esTab_='sets';
+var chatHist=[],chatFrom='home';
+var lastSes=null;
+var nsStep=0,nsData={},nsQ={};
+var addEsGi=0;
+var timerInt=null,timerRem=0,timerEndTime=null;
+var schedaInModifica=false;
+var liberoEsSelezionati=[];
+var feedbackFatica=0;
+var _modSerie=-1;
 
 // STORAGE
 function save(){try{localStorage.setItem('cf_p',JSON.stringify(S.profilo));localStorage.setItem('cf_sc',JSON.stringify(S.schede));localStorage.setItem('cf_st',JSON.stringify(S.storico));localStorage.setItem('cf_set',JSON.stringify(SET));}catch(e){}}
-function load(){try{const p=localStorage.getItem('cf_p');if(p)S.profilo=JSON.parse(p);const sc=localStorage.getItem('cf_sc');if(sc)S.schede=JSON.parse(sc);const st=localStorage.getItem('cf_st');if(st)S.storico=JSON.parse(st);const s=localStorage.getItem('cf_set');if(s)SET={...SET,...JSON.parse(s)};}catch(e){}}
+function load(){try{var p=localStorage.getItem('cf_p');if(p)S.profilo=JSON.parse(p);var sc=localStorage.getItem('cf_sc');if(sc)S.schede=JSON.parse(sc);var st=localStorage.getItem('cf_st');if(st)S.storico=JSON.parse(st);var s=localStorage.getItem('cf_set');if(s)SET=Object.assign({},SET,JSON.parse(s));}catch(e){}}
 function saveSet(){try{localStorage.setItem('cf_set',JSON.stringify(SET));}catch(e){}}
 function resetApp(){if(!confirm('Cancellare tutti i dati?'))return;localStorage.clear();location.reload();}
 
@@ -392,1059 +395,630 @@ function goTo(sc){
   document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
   document.getElementById('screen-chat').style.display='none';
   var noNav=['sessione','completato','chat','libero'];
-  document.getElementById('bnav').style.display=noNav.includes(sc)?'none':'flex';
+  document.getElementById('bnav').style.display=noNav.indexOf(sc)>=0?'none':'flex';
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
-  if(sc==='chat'){var cc=document.getElementById('screen-chat');cc.style.display='flex';document.getElementById('bnav').style.display='none';setTimeout(()=>{const m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;const inp=document.getElementById('chat-in');if(inp)inp.focus();},150);return;}
-  const el=document.getElementById('screen-'+sc);
+  if(sc==='chat'){openChat(chatFrom);return;}
+  var el=document.getElementById('screen-'+sc);
   if(el){el.classList.add('on');el.scrollTop=0;}
-  var tab={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni',libero:''};
-  if(tab[sc])document.querySelector('[data-t="'+tab[sc]+'"]')?.classList.add('on');
+  var tabMap={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
+  if(tabMap[sc]){var nb=document.querySelector('[data-t="'+tabMap[sc]+'"]');if(nb)nb.classList.add('on');}
   if(sc==='home'){renderHome();initConsiglio();}
-  if(sc==='libero'){renderLibero();}
   if(sc==='storico')renderCal();
   if(sc==='profilo')renderProfilo();
   if(sc==='impostazioni')renderSet();
+  if(sc==='libero')renderLibero();
 }
 function navClick(t){goTo(t);}
 
 // WELCOME
 function closeWelcome(){
-  const w=document.getElementById('sw');
+  var w=document.getElementById('sw');
   w.style.opacity='0';
-  setTimeout(()=>{w.style.display='none';startOnb();},600);
+  setTimeout(function(){w.style.display='none';startOnb();},600);
   localStorage.setItem('cf_welcomed','1');
 }
 
 // ONBOARDING
-const ONB=[
+var ONB=[
   {t:'Quanti anni hai?',c:'eta',tipo:'num',ph:'es. 28',u:'anni'},
   {t:'Il tuo sesso',c:'sesso',tipo:'sel',op:['Uomo','Donna','Altro']},
   {t:'Quanto pesi?',c:'peso',tipo:'num',ph:'es. 80',u:'kg'},
   {t:'Quanto sei alto?',c:'altezza',tipo:'num',ph:'es. 178',u:'cm'},
-  {t:'Livello di allenamento',c:'livello',tipo:'sel',op:['Principiante','Intermedio','Avanzato'],
-   desc:{Principiante:'Meno di 1 anno di allenamento',Intermedio:'1–3 anni, conosci i fondamentali',Avanzato:'3+ anni, progressione lenta'}},
+  {t:'Livello di allenamento',c:'livello',tipo:'sel',op:['Principiante','Intermedio','Avanzato'],desc:{Principiante:'Meno di 1 anno',Intermedio:'1-3 anni, conosci i fondamentali',Avanzato:'3+ anni'}},
 ];
-let onbStep=0,onbD={};
+var onbStep=0,onbD={};
 function startOnb(){document.getElementById('sonb').style.display='flex';renderOnb();}
 function renderOnb(){
-  const s=ONB[onbStep];
-  document.getElementById('onb-prog').innerHTML=ONB.map((_,i)=>'<div style="flex:1;height:3px;border-radius:2px;background:'+(i<=onbStep?'var(--y)':'var(--brd)')+'"></div>').join('');
+  var s=ONB[onbStep];
+  var ph='';for(var i=0;i<ONB.length;i++){ph+='<div style="flex:1;height:3px;border-radius:2px;background:'+(i<=onbStep?'var(--y)':'var(--brd)')+'"></div>';}
+  document.getElementById('onb-prog').innerHTML=ph;
   document.getElementById('onb-title').textContent=s.t;
   document.getElementById('onb-back').style.display=onbStep>0?'flex':'none';
-  document.getElementById('onb-next').textContent=onbStep<ONB.length-1?'Avanti →':'Inizia →';
-  const a=document.getElementById('onb-area');
+  document.getElementById('onb-next').textContent=onbStep<ONB.length-1?'Avanti':'Inizia';
+  var a=document.getElementById('onb-area');
   if(s.tipo==='num'){
     a.innerHTML='<div style="display:flex;align-items:center;gap:12px;background:var(--sur);border-radius:12px;padding:0 16px;border:1px solid var(--brd);"><input type="number" id="onb-v" placeholder="'+s.ph+'" oninput="onbChk()" value="'+(onbD[s.c]||'')+'" style="flex:1;background:none;border:none;outline:none;font-family:Oswald;font-size:28px;font-weight:600;color:var(--w);padding:18px 0;"><span style="color:var(--mu);font-size:14px;">'+s.u+'</span></div>';
-    setTimeout(()=>document.getElementById('onb-v')?.focus(),100);
+    setTimeout(function(){var v=document.getElementById('onb-v');if(v)v.focus();},100);
   }else{
-    a.innerHTML=s.op.map(o=>'<div class="opt'+(onbD[s.c]===o?' sel':'')+'" onclick="onbSel(\''+o+'\')"><p>'+o+'</p>'+(s.desc?'<small>'+s.desc[o]+'</small>':'')+' </div>').join('');
+    var html='';
+    for(var i=0;i<s.op.length;i++){var o=s.op[i];html+='<div class="opt'+(onbD[s.c]===o?' sel':'')+'" onclick="onbSel(\''+o+'\')"><p>'+o+'</p>'+(s.desc?'<small>'+s.desc[o]+'</small>':'')+' </div>';}
+    a.innerHTML=html;
   }
   onbChk();
 }
-function onbChk(){const s=ONB[onbStep];const v=s.tipo==='num'?document.getElementById('onb-v')?.value:onbD[s.c];const ok=v&&v!=='';const b=document.getElementById('onb-next');b.style.opacity=ok?'1':'.4';b.style.pointerEvents=ok?'auto':'none';}
+function onbChk(){var s=ONB[onbStep];var v=s.tipo==='num'?(document.getElementById('onb-v')?document.getElementById('onb-v').value:''):onbD[s.c];var ok=v&&v!=='';var b=document.getElementById('onb-next');b.style.opacity=ok?'1':'.4';b.style.pointerEvents=ok?'auto':'none';}
 function onbSel(v){onbD[ONB[onbStep].c]=v;renderOnb();}
 function onbBack(){if(onbStep>0){onbStep--;renderOnb();}}
-function onbNext(){const s=ONB[onbStep];if(s.tipo==='num')onbD[s.c]=document.getElementById('onb-v').value;if(onbStep<ONB.length-1){onbStep++;renderOnb();}else{S.profilo={...onbD};save();document.getElementById('sonb').style.display='none';goTo('home');}}
+function onbNext(){var s=ONB[onbStep];if(s.tipo==='num'){var v=document.getElementById('onb-v');if(v)onbD[s.c]=v.value;}if(onbStep<ONB.length-1){onbStep++;renderOnb();}else{S.profilo=Object.assign({},onbD);save();document.getElementById('sonb').style.display='none';goTo('home');}}
 
 // HOME
 function renderHome(){
-  const ora=new Date().getHours();
-  document.getElementById('hsal').textContent=ora<12?'Buongiorno 👋':ora<18?'Buon pomeriggio 👋':'Buonasera 👋';
-  const p=S.profilo||{};
-  document.getElementById('htags').innerHTML='<span class="tag ty">'+(p.livello||'—')+'</span> <span class="tag tm">'+(p.peso||'—')+' kg</span> <span class="tag tg">Attivo</span>';
-  const hs=document.getElementById('hschede');
-  if(!S.schede.length){hs.innerHTML='<div class="empty"><div style="font-size:48px;">📋</div><p class="ow" style="font-size:18px;font-weight:600;">Nessuna scheda</p><p style="font-size:13px;color:var(--mu);">Crea la tua prima scheda</p><button class="btn bp" style="margin-top:8px;" onclick="showNewScheda()">+ Crea scheda</button></div>';}
-  else{hs.innerHTML=S.schede.map((sc,i)=>'<div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:10px;" onclick="apriScheda('+i+')"><div><p class="ow" style="font-size:18px;font-weight:600;">'+sc.nome+'</p><p style="font-size:13px;color:var(--mu);margin-top:2px;">'+(sc.desc||sc.descrizione||'')+'</p></div><span style="color:var(--y);font-size:20px;">›</span></div>').join('');}
-  const rec=S.storico.slice(-3).reverse();
-  const hr=document.getElementById('hrec');
+  var ora=new Date().getHours();
+  document.getElementById('hsal').textContent=ora<12?'Buongiorno':ora<18?'Buon pomeriggio':'Buonasera';
+  var p=S.profilo||{};
+  document.getElementById('htags').innerHTML='<span class="tag ty">'+(p.livello||'-')+'</span> <span class="tag tm">'+(p.peso||'-')+' kg</span> <span class="tag tg">Attivo</span>';
+  var hs=document.getElementById('hschede');
+  if(!S.schede.length){
+    hs.innerHTML='<div class="empty"><div style="font-size:48px;">📋</div><p class="ow" style="font-size:18px;font-weight:600;">Nessuna scheda</p><p style="font-size:13px;color:var(--mu);">Crea la tua prima scheda</p><button class="btn bp" style="margin-top:8px;" onclick="showNewScheda()">+ Crea scheda</button></div>';
+  }else{
+    var schedeH='';
+    for(var i=0;i<S.schede.length;i++){var sc=S.schede[i];schedeH+='<div class="card" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:10px;" onclick="apriScheda('+i+')"><div><p class="ow" style="font-size:18px;font-weight:600;">'+sc.nome+'</p><p style="font-size:13px;color:var(--mu);margin-top:2px;">'+(sc.desc||sc.descrizione||'')+'</p></div><span style="color:var(--y);font-size:20px;">›</span></div>';}
+    hs.innerHTML=schedeH;
+  }
+  var rec=S.storico.slice(-3).reverse();
+  var hr=document.getElementById('hrec');
   if(!rec.length){hr.innerHTML='';return;}
-  hr.innerHTML='<p class="ow" style="font-size:18px;font-weight:600;margin-bottom:12px;">Ultimi allenamenti</p>'+rec.map(a=>{const dt=new Date(a.dataISO+'T00:00:00');const ds=dt.getDate()+' '+MESI[dt.getMonth()];return '<div class="card" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="ow" style="font-size:15px;font-weight:600;color:var(--y);">'+ds+'</span><span class="tag ty">'+a.giornoNome+'</span></div>'+a.esercizi.map(e=>'<p style="font-size:13px;color:var(--mu);line-height:1.8;">· '+e.nome+' '+(e.serieLog&&e.serieLog[0]&&e.serieLog[0].kg>0?e.serieLog[0].kg+' kg':'BW')+' × '+(e.serieLog&&e.serieLog[0]?e.serieLog[0].rip:'')+'</p>').join('')+'</div>';}).join('');
+  var recH='<p class="ow" style="font-size:18px;font-weight:600;margin-bottom:12px;">Ultimi allenamenti</p>';
+  for(var i=0;i<rec.length;i++){
+    var a=rec[i];var dt=new Date(a.dataISO+'T00:00:00');var ds=dt.getDate()+' '+MESI[dt.getMonth()];
+    recH+='<div class="card" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="ow" style="font-size:15px;font-weight:600;color:var(--y);">'+ds+'</span><span class="tag ty">'+a.giornoNome+'</span></div>';
+    for(var j=0;j<a.esercizi.length;j++){var e=a.esercizi[j];var kg=e.serieLog&&e.serieLog[0]&&e.serieLog[0].kg>0?e.serieLog[0].kg+' kg':'BW';var rip=e.serieLog&&e.serieLog[0]?e.serieLog[0].rip:'';recH+='<p style="font-size:13px;color:var(--mu);line-height:1.8;">· '+e.nome+' '+kg+' × '+rip+'</p>';}
+    recH+='</div>';
+  }
+  hr.innerHTML=recH;
 }
 
 // NUOVA SCHEDA
-const CHAT_Q=[
-  {id:'zone',t:'Hai zone del corpo su cui vuoi concentrarti?',op:['Gambe e glutei','Petto e braccia','Schiena','Tutto uguale']},
-  {id:'limiti',t:'Hai infortuni o limitazioni fisiche?',op:['Nessuna','Mal di schiena','Ginocchio','Spalla']},
+var CHAT_Q=[
+  {id:'zone',t:'Hai zone del corpo su cui concentrarti?',op:['Gambe e glutei','Petto e braccia','Schiena','Tutto uguale']},
+  {id:'limiti',t:'Hai infortuni o limitazioni?',op:['Nessuna','Mal di schiena','Ginocchio','Spalla']},
   {id:'tempo',t:'Quanto tempo hai per sessione?',op:['30-45 min','45-60 min','60-90 min','Oltre 90 min']},
 ];
 function showNewScheda(){nsStep=0;nsData={};nsQ={chatStep:0,chatAnswers:{}};document.getElementById('mo-new').classList.add('on');renderNS();}
 function closeMoNew(){document.getElementById('mo-new').classList.remove('on');}
 function renderNS(){
-  const b=document.getElementById('mo-new-body');
-  const lv=(S.profilo?.livello||'Intermedio').toLowerCase();
-  const eta=parseInt(S.profilo?.eta||0);
+  var b=document.getElementById('mo-new-body');
+  var p=S.profilo||{};var lv=(p.livello||'Intermedio').toLowerCase();var eta=parseInt(p.eta||0);
   if(nsStep===0){
     b.innerHTML='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Come vuoi creare la scheda?</p>'
-      +'<div class="opt" onclick="nsStep=1;renderNS()"><p>📋 Usa un programma pronto</p><small>Programmi studiati per il tuo livello e obiettivo</small></div>'
-      +'<div class="opt" onclick="nsStep=4;renderNS()"><p>✏️ Crea da zero</p><small>Scegli tu giorni ed esercizi</small></div>';
+      +'<div class="opt" onclick="nsStep=1;renderNS()"><p>📋 Usa un programma pronto</p><small>Programmi studiati per il tuo livello</small></div>'
+      +'<div class="opt" onclick="nsStep=4;renderNS()"><p>✏️ Crea da zero</p><small>Descrivi a COMODO AI cosa vuoi fare</small></div>';
   }else if(nsStep===1){
-    const obs=[{id:'forza',l:'💪 Forza',d:'Aumentare i carichi'},{id:'massa',l:'📈 Massa muscolare',d:'Aumentare il volume'},{id:'dimagrimento',l:'🔥 Dimagrimento',d:'Perdere grasso'},{id:'benessere',l:'🧘 Benessere',d:'Stare meglio'}];
-    b.innerHTML='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Qual è il tuo obiettivo?</p>'
-      +obs.map(o=>'<div class="opt'+(nsQ.obiettivo===o.id?' sel':'')+'" onclick="nsQ.obiettivo=\''+o.id+'\';renderNS()"><p>'+o.l+'</p><small>'+o.d+'</small></div>').join('')
-      +'<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn bs" style="flex:1;" onclick="nsStep=0;renderNS()">← Indietro</button>'
-      +'<button class="btn bp" style="flex:2;opacity:'+(nsQ.obiettivo?1:.4)+';pointer-events:'+(nsQ.obiettivo?'auto':'none')+';" onclick="nsStep=2;nsQ.chatStep=0;renderNS()">Avanti →</button></div>';
+    var obs=[{id:'forza',l:'💪 Forza'},{id:'massa',l:'📈 Massa'},{id:'dimagrimento',l:'🔥 Dimagrimento'},{id:'benessere',l:'🧘 Benessere'}];
+    var html='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Obiettivo?</p>';
+    for(var i=0;i<obs.length;i++){var o=obs[i];html+='<div class="opt'+(nsQ.obiettivo===o.id?' sel':'')+'" onclick="nsQ.obiettivo=\''+o.id+'\';renderNS()"><p>'+o.l+'</p></div>';}
+    html+='<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn bs" style="flex:1;" onclick="nsStep=0;renderNS()">← Indietro</button><button class="btn bp" style="flex:2;opacity:'+(nsQ.obiettivo?1:.4)+';pointer-events:'+(nsQ.obiettivo?'auto':'none')+';" onclick="nsStep=2;nsQ.chatStep=0;renderNS()">Avanti →</button></div>';
+    b.innerHTML=html;
   }else if(nsStep===2){
-    // Microchat
-    const qi=nsQ.chatStep||0;
-    let html='<p class="ow" style="font-size:18px;font-weight:700;margin-bottom:16px;">Parliamo di te <span style="color:var(--y);">✦</span></p>';
-    for(let i=0;i<qi;i++){const d=CHAT_Q[i];html+='<div style="margin-bottom:12px;"><p style="font-size:12px;color:var(--mu);margin-bottom:4px;">✦ '+d.t+'</p><p style="font-size:13px;background:var(--sur2);border-radius:8px;padding:8px 12px;display:inline-block;">'+(nsQ.chatAnswers[d.id]||'—')+'</p></div>';}
+    var qi=nsQ.chatStep||0;
+    var html='<p class="ow" style="font-size:18px;font-weight:700;margin-bottom:16px;">Parliamo di te ✦</p>';
+    for(var i=0;i<qi;i++){var d=CHAT_Q[i];html+='<div style="margin-bottom:12px;"><p style="font-size:12px;color:var(--mu);margin-bottom:4px;">✦ '+d.t+'</p><p style="font-size:13px;background:var(--sur2);border-radius:8px;padding:8px 12px;display:inline-block;">'+(nsQ.chatAnswers[d.id]||'-')+'</p></div>';}
     if(qi<CHAT_Q.length){
-      const d=CHAT_Q[qi];
-      html+='<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:12px;padding:14px;margin-bottom:16px;">'
-        +'<p style="font-size:12px;color:var(--y);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">✦ AI Coach</p>'
-        +'<p style="font-size:14px;line-height:1.5;">'+d.t+'</p></div>';
+      var d=CHAT_Q[qi];
+      html+='<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:12px;color:var(--y);font-weight:600;margin-bottom:6px;">✦ COMODO AI</p><p style="font-size:14px;line-height:1.5;">'+d.t+'</p></div>';
       html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">';
-      d.op.forEach(function(op,oi){html+='<button class="chip" style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;" onclick="chatAns('+oi+')">'+op+'</button>';});
+      for(var i=0;i<d.op.length;i++){html+='<button style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;color:var(--w);cursor:pointer;font-family:Inter;font-size:13px;" onclick="chatAns('+i+')">'+d.op[i]+'</button>';}
       html+='</div><p style="font-size:11px;color:var(--mu);text-align:center;">'+(qi+1)+' di '+CHAT_Q.length+'</p>';
     }else{
-      html+='<div style="background:rgba(82,201,122,.1);border:1px solid rgba(82,201,122,.3);border-radius:10px;padding:12px;margin-bottom:16px;"><p style="font-size:13px;color:var(--gr);">✓ Ottimo! Ora ti mostro il programma più adatto a te.</p></div>'
-        +'<button class="btn bp" style="margin-bottom:8px;" onclick="nsStep=3;renderNS()">Vedi i programmi →</button>';
+      html+='<div style="background:rgba(82,201,122,.1);border:1px solid rgba(82,201,122,.3);border-radius:10px;padding:12px;margin-bottom:16px;"><p style="font-size:13px;color:var(--gr);">✓ Ottimo! Ora ti mostro il programma adatto.</p></div><button class="btn bp" style="margin-bottom:8px;" onclick="nsStep=3;renderNS()">Vedi i programmi →</button>';
     }
     html+='<button class="btn bs" style="margin-top:4px;" onclick="nsStep=1;renderNS()">← Indietro</button>';
     b.innerHTML=html;
   }else if(nsStep===3){
-    const ob=nsQ.obiettivo||'forza';
-    const isAnz=eta>=65;
-    const prefix=isAnz?'anziano_':lv+'_';
-    const bestKey=prefix+ob;
-    let keys=[];
-    if(PROG[bestKey])keys.push(bestKey);
-    Object.keys(PROG).forEach(k=>{if(k.startsWith(prefix)&&k!==bestKey)keys.push(k);});
-    if(!keys.length)Object.keys(PROG).forEach(k=>{if(k.startsWith('principiante_'))keys.push(k);});
-    const obLbl={forza:'💪 Forza',massa:'📈 Massa',dimagrimento:'🔥 Dimagrimento',benessere:'🧘 Benessere'};
-    let html='<p style="font-size:13px;color:var(--mu);margin-bottom:4px;">Programmi consigliati</p><p style="font-size:12px;color:var(--y);margin-bottom:16px;">'+(obLbl[ob]||'')+' · '+(isAnz?'Senior':(lv.charAt(0).toUpperCase()+lv.slice(1)))+(eta?' · '+eta+' anni':'')+'</p>';
-    keys.forEach(function(k){const t=PROG[k];const best=k===bestKey;html+='<div class="opt'+(best?' sel':'')+'" onclick="addTemplate(\''+k+'\')"><p>'+t.nome+(best?' <span style="font-size:11px;color:var(--y);">✦ Consigliato</span>':'')+'</p><small>'+t.desc+'</small></div>';});
+    var ob=nsQ.obiettivo||'forza';var isAnz=eta>=65;var prefix=isAnz?'anziano_':lv+'_';var bestKey=prefix+ob;
+    var keys=[];if(PROG[bestKey])keys.push(bestKey);
+    for(var k in PROG){if(k.indexOf(prefix)===0&&k!==bestKey)keys.push(k);}
+    if(!keys.length){for(var k in PROG){if(k.indexOf('principiante_')===0)keys.push(k);}}
+    var html='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Programmi consigliati</p>';
+    for(var i=0;i<keys.length;i++){var k=keys[i];var t=PROG[k];var best=k===bestKey;html+='<div class="opt'+(best?' sel':'')+'" onclick="addTemplate(\''+k+'\')"><p>'+t.nome+(best?' <span style="font-size:11px;">✦ Consigliato</span>':'')+'</p><small>'+t.desc+'</small></div>';}
     html+='<button class="btn bs" style="margin-top:8px;" onclick="nsStep=2;renderNS()">← Indietro</button>';
     b.innerHTML=html;
   }else if(nsStep===4){
-    // Chat AI per creare scheda da zero
-    var chatMsgs=nsData.aiChat||[];
-    var html='';
-    if(!chatMsgs.length){
-      html+='<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:12px;padding:14px;margin-bottom:16px;">'
-        +'<p class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">✦ COMODO AI</p>'
-        +'<p style="font-size:14px;line-height:1.6;">Descrivi la scheda che vuoi creare. Puoi scrivere liberamente, per esempio: "Giorno di petto e tricipiti, voglio panca piana, panca inclinata, dips e skull crusher, 4 serie ognuno."</p>'
-        +'</div>';
-    } else {
-      chatMsgs.forEach(function(m){
-        var isUser=m.role==='user';
-        html+='<div style="display:flex;'+(isUser?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:10px;">'
-          +'<div class="'+(isUser?'cb-u':'cb-a')+'" style="'+(m.loading?'color:var(--mu);font-style:italic;':'')+'">'+(m.content||'')+'</div></div>';
-      });
-    }
-    html+='<div style="display:flex;gap:8px;margin-top:12px;">'
-      +'<input type="text" id="ns-ai-input" placeholder="Descrivi la tua scheda..." style="flex:1;" onkeydown="if(event.key===\'Enter\')inviaDescrizioneScheda()">'
-      +'<button onclick="inviaDescrizioneScheda()" style="background:var(--y);border:none;border-radius:8px;width:42px;height:42px;cursor:pointer;font-size:18px;color:#111;flex-shrink:0;">↑</button>'
-      +'</div>';
-    if(nsData.schedaGenerata){
-      html+='<div style="margin-top:16px;background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:10px;padding:12px;margin-bottom:12px;">'
-        +'<p style="font-size:13px;color:var(--gr);margin-bottom:8px;">✓ Scheda generata — puoi modificarla dopo averla salvata</p>'
-        +'<button class="btn bp" onclick="salvaDaAI()">Salva scheda →</button>'
-        +'</div>';
-    }
+    var chatMsgs=nsData.aiChat||[];var html='';
+    if(!chatMsgs.length){html+='<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;margin-bottom:6px;">✦ COMODO AI</p><p style="font-size:14px;line-height:1.6;">Descrivi la scheda che vuoi creare. Per esempio: "Giorno di petto e tricipiti, panca piana, panca inclinata, dips, skull crusher, 4 serie ognuno."</p></div>';}
+    else{for(var i=0;i<chatMsgs.length;i++){var m=chatMsgs[i];html+='<div style="display:flex;'+(m.role==='user'?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:10px;"><div class="'+(m.role==='user'?'cb-u':'cb-a')+'" '+(m.loading?'style="color:var(--mu);font-style:italic;"':'')+'>'+m.content+'</div></div>';}}
+    html+='<div style="display:flex;gap:8px;margin-top:12px;"><input type="text" id="ns-ai-input" placeholder="Descrivi la tua scheda..." style="flex:1;"><button onclick="inviaDescrizioneScheda()" style="background:var(--y);border:none;border-radius:8px;width:42px;height:42px;cursor:pointer;font-size:18px;color:#111;flex-shrink:0;">↑</button></div>';
+    if(nsData.schedaGenerata){html+='<div style="margin-top:16px;background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:10px;padding:12px;margin-bottom:12px;"><p style="font-size:13px;color:var(--gr);margin-bottom:8px;">✓ Scheda generata!</p><button class="btn bp" onclick="salvaDaAI()">Salva scheda →</button></div>';}
     html+='<button class="btn bs" style="margin-top:8px;" onclick="nsStep=0;renderNS()">← Indietro</button>';
     b.innerHTML=html;
-    if(!chatMsgs.length&&!nsData.schedaGenerata){
-      setTimeout(function(){var inp=document.getElementById('ns-ai-input');if(inp)inp.focus();},200);
-    }
+    setTimeout(function(){var inp=document.getElementById('ns-ai-input');if(inp)inp.focus();},200);
   }
 }
-function chatAns(oi){const qi=nsQ.chatStep||0;if(qi>=CHAT_Q.length)return;const d=CHAT_Q[qi];nsQ.chatAnswers[d.id]=d.op[oi];nsQ.chatStep=qi+1;renderNS();}
-function addTemplate(key){const t=JSON.parse(JSON.stringify(PROG[key]));t.giorni.forEach(g=>g.esercizi.forEach(e=>{if(!e.storia)e.storia=[];}));S.schede.push(t);save();closeMoNew();renderHome();}
-function addG(){const ids=['A','B','C','D','E','F'];const i=nsData.giorni.length;nsData.giorni.push({id:ids[i]||String(i+1),nome:'Giorno '+(ids[i]||i+1),esercizi:[]});renderNS();}
-function rmG(gi){nsData.giorni.splice(gi,1);renderNS();}
-function rmE(gi,ei){nsData.giorni[gi].esercizi.splice(ei,1);renderNS();}
-
+function chatAns(oi){var qi=nsQ.chatStep||0;if(qi>=CHAT_Q.length)return;nsQ.chatAnswers[CHAT_Q[qi].id]=CHAT_Q[qi].op[oi];nsQ.chatStep=qi+1;renderNS();}
+function addTemplate(key){
+  var t=JSON.parse(JSON.stringify(PROG[key]));
+  for(var i=0;i<t.giorni.length;i++){for(var j=0;j<t.giorni[i].esercizi.length;j++){if(!t.giorni[i].esercizi[j].storia)t.giorni[i].esercizi[j].storia=[];}}
+  S.schede.push(t);save();closeMoNew();renderHome();
+}
 async function inviaDescrizioneScheda(){
-  var inp=document.getElementById('ns-ai-input');
-  if(!inp)return;
-  var txt=inp.value.trim();
-  if(!txt)return;
-  inp.value='';
+  var inp=document.getElementById('ns-ai-input');if(!inp)return;var txt=inp.value.trim();if(!txt)return;inp.value='';
   if(!nsData.aiChat)nsData.aiChat=[];
-  nsData.aiChat.push({role:'user',content:txt});
-  nsData.aiChat.push({role:'assistant',content:'Sto creando la tua scheda...',loading:true});
-  renderNS();
+  nsData.aiChat.push({role:'user',content:txt});nsData.aiChat.push({role:'assistant',content:'Sto creando la tua scheda...',loading:true});renderNS();
   var p=S.profilo||{};
-  var sys='Sei COMODO AI. L utente vuole creare una scheda di allenamento. Livello: '+(p.livello||'intermedio')+', '+(p.eta||'')+' anni. Genera una scheda strutturata in formato JSON con questa struttura esatta: {"nome":"Nome scheda","giorni":[{"id":"A","nome":"Nome giorno","esercizi":[{"nome":"Nome esercizio","muscolo":"Gruppo muscolare","kgInizio":0,"serieInizio":3,"ripInizio":10}]}]}. Rispondi SOLO con il JSON, nessun testo prima o dopo.';
+  var sys='Sei COMODO AI. Crea una scheda di allenamento in formato JSON: {"nome":"Nome","giorni":[{"id":"A","nome":"Giorno A","esercizi":[{"nome":"Nome","muscolo":"Gruppo","kgInizio":0,"serieInizio":3,"ripInizio":10}]}]}. Rispondi SOLO con il JSON valido, nient\'altro.';
   try{
     var r=await callAI(txt,800,sys);
     nsData.aiChat=nsData.aiChat.filter(function(m){return !m.loading;});
-    // Parse JSON
     var clean=r.replace(/```json/g,'').replace(/```/g,'').trim();
     var scheda=JSON.parse(clean);
-    scheda.giorni.forEach(function(g){g.esercizi.forEach(function(e){e.storia=[];});});
+    for(var i=0;i<scheda.giorni.length;i++){for(var j=0;j<scheda.giorni[i].esercizi.length;j++){scheda.giorni[i].esercizi[j].storia=[];}}
     nsData.schedaGenerata=scheda;
-    nsData.aiChat.push({role:'assistant',content:'Scheda creata! Ho preparato "'+scheda.nome+'" con '+scheda.giorni.length+' giorno/i. Puoi salvarla o descrivere modifiche.'});
-  }catch(e){
+    nsData.aiChat.push({role:'assistant',content:'Scheda "'+scheda.nome+'" creata con '+scheda.giorni.length+' giorno/i. Salvala o chiedi modifiche.'});
+  }catch(err){
     nsData.aiChat=nsData.aiChat.filter(function(m){return !m.loading;});
-    nsData.aiChat.push({role:'assistant',content:'Non sono riuscito a interpretare la scheda. Prova a descriverla in modo piu dettagliato, per esempio: "Giorno di gambe con squat 4x8, leg press 3x12 e leg curl 3x12."'});
+    nsData.aiChat.push({role:'assistant',content:'Non sono riuscito. Prova a descrivere in modo piu dettagliato.'});
   }
   renderNS();
 }
+function salvaDaAI(){if(!nsData.schedaGenerata)return;nsData.schedaGenerata.desc='Creata con COMODO AI';S.schede.push(nsData.schedaGenerata);save();closeMoNew();renderHome();}
 
-function salvaDaAI(){
-  if(!nsData.schedaGenerata)return;
-  var scheda=nsData.schedaGenerata;
-  scheda.desc='Creata con COMODO AI';
-  S.schede.push(scheda);
-  save();
-  closeMoNew();
-  renderHome();
-}
+// ESERCIZI PRESET
+var ESP={'Petto':['Panca Piana','Panca Inclinata','Croci ai cavi','Dips','Pec Deck','Push-up','Chest Press (macchina)'],'Schiena':['Trazioni','Lat Machine','Rematore bilanciere','Rematore manubri','Pulley basso','Stacco da terra','Face Pull'],'Spalle':['Military Press','Alzate laterali','Alzate frontali','Scrollate','Arnold Press','Shoulder Press (macchina)'],'Gambe':['Squat','Leg Press','Romanian Deadlift','Leg Extension','Leg Curl','Hip Thrust','Affondi','Calf Raises','Hack Squat'],'Bicipiti':['Curl bilanciere','Curl manubri','Curl martello','Curl bilanciere EZ'],'Tricipiti':['Dips','French Press','Skull Crusher','Pushdown cavi','Tricipiti cavo'],'Core':['Plank','Crunch','Ab Wheel','Leg Raise','Russian Twist','Mountain climber'],'Cardio':['Tapis roulant','Cyclette','Ellittica','Kettlebell Swing','Burpees']};
 
-function saveCustom(){S.schede.push({nome:nsData.nome||'La mia scheda',desc:'Personalizzata',giorni:nsData.giorni});save();closeMoNew();renderHome();}
-
-// ADD ESERCIZIO
-const ESP={'Petto':['Panca Piana','Panca Inclinata','Croci ai cavi','Dips','Pec Deck','Push-up','Chest Press (macchina)'],'Schiena':['Trazioni','Lat Machine','Rematore bilanciere','Rematore manubri','Pulley basso','Stacco da terra','Face Pull'],'Spalle':['Military Press','Alzate laterali','Alzate frontali','Scrollate','Arnold Press','Shoulder Press (macchina)'],'Gambe':['Squat','Leg Press','Stacco da terra','Romanian Deadlift','Leg Extension','Leg Curl','Hip Thrust','Affondi','Calf Raises','Hack Squat'],'Bicipiti':['Curl bilanciere','Curl manubri','Curl martello','Curl bilanciere EZ'],'Tricipiti':['Dips','French Press','Skull Crusher','Pushdown cavi','Tricipiti cavo'],'Core':['Plank','Crunch','Ab Wheel','Leg Raise','Russian Twist','Mountain climber'],'Cardio':['Tapis roulant','Cyclette','Ellittica','Kettlebell Swing','Burpees']};
-function showAddEs(gi){
-  addEsGi=gi;
-  let html='<p style="font-size:13px;color:var(--mu);margin-bottom:12px;">Scegli o scrivi un esercizio</p>'
-    +'<input type="text" id="es-ni" placeholder="Nome esercizio…" style="margin-bottom:10px;">'
-    +'<input type="text" id="es-mi" placeholder="Gruppo muscolare…" style="margin-bottom:10px;">'
-    +'<div style="display:flex;gap:8px;margin-bottom:16px;">'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Kg</label><input type="number" id="es-ki" placeholder="0" value="0" style="text-align:center;"></div>'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Serie</label><input type="number" id="es-si" placeholder="3" value="3" style="text-align:center;"></div>'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Rip</label><input type="number" id="es-ri" placeholder="10" value="10" style="text-align:center;"></div>'
-    +'</div>';
-  Object.entries(ESP).forEach(function([cat,list]){
-    html+='<p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">'+cat+'</p><div style="display:flex;flex-wrap:wrap;">';
-    list.forEach(function(e){html+='<span class="chip" style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;margin:4px;cursor:pointer;" onclick="pickEs(this,\''+e.replace(/'/g,"\\'")+'\',\''+cat+'\')">'+e+'</span>';});
-    html+='</div>';
-  });
-  html+='<button class="btn bp" style="margin-top:20px;" onclick="confirmEs()">Aggiungi</button>';
-  document.getElementById('mo-es-body').innerHTML=html;
-  document.getElementById('mo-es').classList.add('on');
-}
-function pickEs(el,nome,cat){document.getElementById('es-ni').value=nome;document.getElementById('es-mi').value=cat;document.querySelectorAll('#mo-es-body .chip').forEach(c=>c.style.background='var(--sur2)');el.style.background='var(--yd)';}
-function confirmEs(){
-  const nome=document.getElementById('es-ni').value.trim();
-  const mu=document.getElementById('es-mi').value.trim();
-  const kg=parseFloat(document.getElementById('es-ki')?.value||0)||0;
-  const ser=parseInt(document.getElementById('es-si')?.value||3)||3;
-  const rip=parseInt(document.getElementById('es-ri')?.value||10)||10;
-  if(!nome)return;
-  nsData.giorni[addEsGi].esercizi.push({nome,muscolo:mu||'—',storia:[],kgInizio:kg,serieInizio:ser,ripInizio:rip});
-  document.getElementById('mo-es').classList.remove('on');
-  renderNS();
-}
-
-// SCHEDA DETAIL
-var schedaInModifica=false;
-
-function apriScheda(i){
-  scAttiva=S.schede[i];scIdx=i;schedaInModifica=false;
-  document.getElementById('sc-nome').textContent=scAttiva.nome;
-  document.getElementById('ai-sc-box').style.display='none';
-  var btn=document.getElementById('btn-modifica');
-  if(btn){btn.textContent='✏️ Modifica';btn.style.color='var(--mu)';}
-  renderSchedaBody();
-  goTo('scheda');
-}
-
-function toggleModificaScheda(){
-  schedaInModifica=!schedaInModifica;
-  var btn=document.getElementById('btn-modifica');
-  if(btn){btn.textContent=schedaInModifica?'✓ Fine':'✏️ Modifica';btn.style.color=schedaInModifica?'var(--y)':'var(--mu)';}
-  if(!schedaInModifica){save();}
-  renderSchedaBody();
-}
-
-function renderSchedaBody(){
-  var html='';
-  if(schedaInModifica){
-    html+='<div class="card" style="margin-bottom:16px;background:rgba(246,177,0,.06);border-color:rgba(246,177,0,.3);">'
-      +'<p style="font-size:11px;color:var(--y);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;font-family:Oswald;font-weight:600;">Rinomina scheda</p>'
-      +'<input type="text" value="'+scAttiva.nome+'" oninput="scAttiva.nome=this.value;document.getElementById(\'sc-nome\').textContent=this.value;">'
-      +'</div>';
-  }
-  scAttiva.giorni.forEach(function(g,gi){
-    html+='<div style="margin-bottom:20px;">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
-    if(schedaInModifica){
-      html+='<input type="text" value="'+g.nome+'" oninput="scAttiva.giorni['+gi+'].nome=this.value" style="font-family:Oswald;font-size:15px;font-weight:600;color:var(--y);background:none;border:none;border-bottom:1px solid var(--y);border-radius:0;outline:none;padding:4px 0;width:auto;flex:1;">';
-      html+='<button onclick="aggiungiEsInScheda('+gi+')" style="background:none;border:1px dashed var(--y);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;white-space:nowrap;margin-left:8px;">+ Esercizio</button>';
-    } else {
-      html+='<p class="ow" style="font-size:15px;font-weight:600;color:var(--y);text-transform:uppercase;letter-spacing:.06em;">'+g.nome+'</p>';
-      html+='<button class="btn bg" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione('+gi+')">Allena →</button>';
-    }
-    html+='</div>';
-    g.esercizi.forEach(function(e,ei){
-      var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
-      if(schedaInModifica){
-        html+='<div class="cdsm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;">'
-          +'<div style="flex:1;">'
-          +'<p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p>'
-          +'<p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p>'
-          +'<div style="display:flex;gap:10px;margin-top:8px;">'
-          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Kg</label>'
-          +'<input type="number" value="'+(e.kgInizio||0)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].kgInizio=parseFloat(this.value)||0" style="width:65px;padding:6px 8px;font-size:13px;"></div>'
-          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Serie</label>'
-          +'<input type="number" value="'+(e.serieInizio||3)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].serieInizio=parseInt(this.value)||3" style="width:58px;padding:6px 8px;font-size:13px;"></div>'
-          +'<div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px;">Rip</label>'
-          +'<input type="number" value="'+(e.ripInizio||10)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].ripInizio=parseInt(this.value)||10" style="width:58px;padding:6px 8px;font-size:13px;"></div>'
-          +'</div></div>'
-          +'<button onclick="rimuoviEsDaScheda('+gi+','+ei+')" style="background:none;border:none;color:var(--re);font-size:24px;cursor:pointer;padding:0 0 0 10px;flex-shrink:0;line-height:1;">×</button>'
-          +'</div>';
-      } else {
-        var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');
-        html+='<div class="cdsm" style="margin-bottom:8px;cursor:pointer;" onclick="apriEs(\''+encodeURIComponent(e.nome)+'\','+gi+')">'
-          +'<div style="display:flex;justify-content:space-between;align-items:center;"><div>'
-          +'<p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p>'
-          +'<p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p></div>'
-          +(ult?'<div style="text-align:right;"><p class="ow" style="font-size:14px;font-weight:600;color:var(--y);">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p><p style="font-size:11px;color:var(--mu);">'+ult.serie+' x '+ult.rip+'</p></div>':'')
-          +'</div>'+(e.storia&&e.storia.length>=2?'<div id="'+cid+'" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);"></div>':'')
-          +'</div>';
-      }
-    });
-    if(schedaInModifica&&scAttiva.giorni.length>1){
-      html+='<button onclick="rimuoviGiornoScheda('+gi+')" style="background:none;border:1px solid var(--re);border-radius:6px;color:var(--re);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;margin-top:4px;">Rimuovi giorno</button>';
-    }
-    html+='</div>';
-  });
-  if(schedaInModifica){
-    html+='<button onclick="aggiungiGiornoScheda()" class="btn bs" style="margin-bottom:12px;">+ Aggiungi giorno</button>';
-    html+='<button onclick="eliminaScheda()" class="btn" style="background:var(--re);color:#fff;margin-bottom:20px;">Elimina scheda</button>';
-  }
-  document.getElementById('sc-body').innerHTML=html;
-  if(!schedaInModifica){
-    setTimeout(function(){
-      scAttiva.giorni.forEach(function(g){
-        g.esercizi.forEach(function(e){
-          var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');
-          if(e.storia&&e.storia.length>=2)miniChart(e.storia,cid);
-        });
-      });
-    },100);
-  }
-}
-
-function rimuoviEsDaScheda(gi,ei){
-  if(!confirm('Rimuovere "'+scAttiva.giorni[gi].esercizi[ei].nome+'"?'))return;
-  scAttiva.giorni[gi].esercizi.splice(ei,1);save();renderSchedaBody();
-}
-function rimuoviGiornoScheda(gi){
-  if(!confirm('Rimuovere "'+scAttiva.giorni[gi].nome+'"?'))return;
-  scAttiva.giorni.splice(gi,1);save();renderSchedaBody();
-}
-function aggiungiGiornoScheda(){
-  var ids=['A','B','C','D','E','F'];var i=scAttiva.giorni.length;
-  scAttiva.giorni.push({id:ids[i]||String(i+1),nome:'Giorno '+(ids[i]||i+1),esercizi:[]});
-  save();renderSchedaBody();
-}
-function aggiungiEsInScheda(gi){
-  addEsGi=gi;window._addEsTarget='scheda';
+function mostraModalEs(gi,target){
+  addEsGi=gi;window._addEsTarget=target||'scheda';
   var b=document.getElementById('mo-es-body');
   var html='<p style="font-size:13px;color:var(--mu);margin-bottom:12px;">Aggiungi esercizio</p>'
     +'<input type="text" id="es-ni" placeholder="Nome esercizio..." style="margin-bottom:10px;">'
     +'<input type="text" id="es-mi" placeholder="Gruppo muscolare..." style="margin-bottom:10px;">'
     +'<div style="display:flex;gap:8px;margin-bottom:16px;">'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Kg</label><input type="number" id="es-ki" value="0" style="text-align:center;"></div>'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Serie</label><input type="number" id="es-si" value="3" style="text-align:center;"></div>'
-    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Rip</label><input type="number" id="es-ri" value="10" style="text-align:center;"></div>'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:6px;">Kg</label><input type="number" id="es-ki" value="0" style="text-align:center;"></div>'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:6px;">Serie</label><input type="number" id="es-si" value="3" style="text-align:center;"></div>'
+    +'<div style="flex:1;"><label style="font-size:11px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:6px;">Rip</label><input type="number" id="es-ri" value="10" style="text-align:center;"></div>'
     +'</div>';
-  Object.entries(ESP).forEach(function(entry){
-    var cat=entry[0],list=entry[1];
-    html+='<p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">'+cat+'</p><div style="display:flex;flex-wrap:wrap;">';
-    list.forEach(function(e){html+='<span class="chip" style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;margin:4px;cursor:pointer;" onclick="pickEs(this,\''+e.replace(/'/g,"\\'")+'\',\''+cat+'\')">'+e+'</span>';});
+  for(var cat in ESP){
+    html+='<p style="font-size:11px;color:var(--mu);text-transform:uppercase;margin:12px 0 6px;">'+cat+'</p><div style="display:flex;flex-wrap:wrap;">';
+    var list=ESP[cat];for(var i=0;i<list.length;i++){html+='<span onclick="pickEs(this,\''+list[i].replace(/'/g,"\\'")+ '\',\''+cat+'\')" style="background:var(--sur2);border:1px solid var(--brd);border-radius:20px;padding:8px 14px;margin:4px;cursor:pointer;font-size:13px;color:var(--w);">'+list[i]+'</span>';}
     html+='</div>';
-  });
-  html+='<button class="btn bp" style="margin-top:20px;" onclick="confirmEsInScheda()">Aggiungi</button>';
+  }
+  html+='<button class="btn bp" style="margin-top:20px;" onclick="confirmAddEs()">Aggiungi</button>';
   b.innerHTML=html;document.getElementById('mo-es').classList.add('on');
 }
-function confirmEsInScheda(){
-  var nome=document.getElementById('es-ni').value.trim();
-  var mu=document.getElementById('es-mi').value.trim();
-  var kg=parseFloat(document.getElementById('es-ki').value||0)||0;
-  var ser=parseInt(document.getElementById('es-si').value||3)||3;
-  var rip=parseInt(document.getElementById('es-ri').value||10)||10;
+function pickEs(el,nome,cat){document.getElementById('es-ni').value=nome;document.getElementById('es-mi').value=cat;document.querySelectorAll('#mo-es-body span').forEach(function(c){c.style.background='var(--sur2)';});el.style.background='var(--yd)';}
+function confirmAddEs(){
+  var nome=(document.getElementById('es-ni').value||'').trim();var mu=(document.getElementById('es-mi').value||'').trim();
+  var kg=parseFloat(document.getElementById('es-ki').value)||0;var ser=parseInt(document.getElementById('es-si').value)||3;var rip=parseInt(document.getElementById('es-ri').value)||10;
   if(!nome)return;
-  scAttiva.giorni[addEsGi].esercizi.push({nome:nome,muscolo:mu||'—',storia:[],kgInizio:kg,serieInizio:ser,ripInizio:rip});
-  save();document.getElementById('mo-es').classList.remove('on');renderSchedaBody();
-}
-function eliminaScheda(){
-  if(!confirm('Eliminare la scheda "'+scAttiva.nome+'"?'))return;
-  S.schede.splice(scIdx,1);save();goTo('home');
+  var obj={nome:nome,muscolo:mu||'-',storia:[],kgInizio:kg,serieInizio:ser,ripInizio:rip};
+  if(window._addEsTarget==='scheda'){scAttiva.giorni[addEsGi].esercizi.push(obj);save();document.getElementById('mo-es').classList.remove('on');renderSchedaBody();}
+  else{nsData.giorni[addEsGi].esercizi.push(obj);document.getElementById('mo-es').classList.remove('on');renderNS();}
 }
 
+// SCHEDA DETAIL
+function apriScheda(i){scAttiva=S.schede[i];scIdx=i;schedaInModifica=false;document.getElementById('sc-nome').textContent=scAttiva.nome;document.getElementById('ai-sc-box').style.display='none';var btn=document.getElementById('btn-modifica');if(btn){btn.textContent='✏️ Modifica';btn.style.color='var(--mu)';}renderSchedaBody();goTo('scheda');}
+function toggleModificaScheda(){schedaInModifica=!schedaInModifica;var btn=document.getElementById('btn-modifica');if(btn){btn.textContent=schedaInModifica?'✓ Fine':'✏️ Modifica';btn.style.color=schedaInModifica?'var(--y)':'var(--mu)';}if(!schedaInModifica)save();renderSchedaBody();}
+function renderSchedaBody(){
+  var html='';
+  if(schedaInModifica){html+='<div class="card" style="margin-bottom:16px;background:rgba(246,177,0,.06);border-color:rgba(246,177,0,.3);"><p style="font-size:11px;color:var(--y);text-transform:uppercase;margin-bottom:10px;font-family:Oswald;font-weight:600;">Rinomina scheda</p><input type="text" value="'+scAttiva.nome+'" oninput="scAttiva.nome=this.value;document.getElementById(\'sc-nome\').textContent=this.value;"></div>';}
+  for(var gi=0;gi<scAttiva.giorni.length;gi++){
+    var g=scAttiva.giorni[gi];
+    html+='<div style="margin-bottom:20px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+    if(schedaInModifica){
+      html+='<input type="text" value="'+g.nome+'" oninput="scAttiva.giorni['+gi+'].nome=this.value" style="font-family:Oswald;font-size:15px;font-weight:600;color:var(--y);background:none;border:none;border-bottom:1px solid var(--y);border-radius:0;outline:none;padding:4px 0;flex:1;">';
+      html+='<button onclick="mostraModalEs('+gi+',\'scheda\')" style="background:none;border:1px dashed var(--y);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;margin-left:8px;">+ Esercizio</button>';
+    }else{
+      html+='<p class="ow" style="font-size:15px;font-weight:600;color:var(--y);text-transform:uppercase;letter-spacing:.06em;">'+g.nome+'</p>';
+      html+='<button class="btn bg" style="width:auto;padding:6px 14px;font-size:13px;" onclick="avviaSessione('+gi+')">Allena →</button>';
+    }
+    html+='</div>';
+    for(var ei=0;ei<g.esercizi.length;ei++){
+      var e=g.esercizi[ei];var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
+      if(schedaInModifica){
+        html+='<div class="cdsm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;"><div style="flex:1;"><p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p><p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p><div style="display:flex;gap:10px;margin-top:8px;"><div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:3px;">Kg</label><input type="number" value="'+(e.kgInizio||0)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].kgInizio=parseFloat(this.value)||0" style="width:65px;padding:6px 8px;font-size:13px;"></div><div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:3px;">Serie</label><input type="number" value="'+(e.serieInizio||3)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].serieInizio=parseInt(this.value)||3" style="width:58px;padding:6px 8px;font-size:13px;"></div><div><label style="font-size:10px;color:var(--mu);text-transform:uppercase;display:block;margin-bottom:3px;">Rip</label><input type="number" value="'+(e.ripInizio||10)+'" oninput="scAttiva.giorni['+gi+'].esercizi['+ei+'].ripInizio=parseInt(this.value)||10" style="width:58px;padding:6px 8px;font-size:13px;"></div></div></div><button onclick="rimuoviEsDaScheda('+gi+','+ei+')" style="background:none;border:none;color:var(--re);font-size:24px;cursor:pointer;padding:0 0 0 10px;">×</button></div>';
+      }else{
+        var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');
+        html+='<div class="cdsm" style="margin-bottom:8px;cursor:pointer;" onclick="apriEs(\''+encodeURIComponent(e.nome)+'\','+gi+')">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;"><div><p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p><p style="font-size:12px;color:var(--mu);margin-top:2px;">'+(e.muscolo||'')+'</p></div>'
+          +(ult?'<div style="text-align:right;"><p class="ow" style="font-size:14px;font-weight:600;color:var(--y);">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p><p style="font-size:11px;color:var(--mu);">'+ult.serie+' × '+ult.rip+'</p></div>':'')
+          +'</div>'+(e.storia&&e.storia.length>=2?'<div id="'+cid+'" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--brd);"></div>':'')+'</div>';
+      }
+    }
+    if(schedaInModifica&&scAttiva.giorni.length>1){html+='<button onclick="rimuoviGiornoScheda('+gi+')" style="background:none;border:1px solid var(--re);border-radius:6px;color:var(--re);font-size:12px;font-family:Oswald;font-weight:600;padding:5px 10px;cursor:pointer;margin-top:4px;">Rimuovi giorno</button>';}
+    html+='</div>';
+  }
+  if(schedaInModifica){html+='<button onclick="aggiungiGiornoScheda()" class="btn bs" style="margin-bottom:12px;">+ Aggiungi giorno</button><button onclick="eliminaScheda()" class="btn" style="background:var(--re);color:#fff;margin-bottom:20px;">Elimina scheda</button>';}
+  document.getElementById('sc-body').innerHTML=html;
+  if(!schedaInModifica){setTimeout(function(){for(var gi=0;gi<scAttiva.giorni.length;gi++){for(var ei=0;ei<scAttiva.giorni[gi].esercizi.length;ei++){var e=scAttiva.giorni[gi].esercizi[ei];if(e.storia&&e.storia.length>=2){var cid='ch_'+e.nome.replace(/[^a-zA-Z0-9]/g,'_');miniChart(e.storia,cid);}}}},100);}
+}
+function rimuoviEsDaScheda(gi,ei){if(!confirm('Rimuovere?'))return;scAttiva.giorni[gi].esercizi.splice(ei,1);save();renderSchedaBody();}
+function rimuoviGiornoScheda(gi){if(!confirm('Rimuovere il giorno?'))return;scAttiva.giorni.splice(gi,1);save();renderSchedaBody();}
+function aggiungiGiornoScheda(){var ids=['A','B','C','D','E','F'];var i=scAttiva.giorni.length;scAttiva.giorni.push({id:ids[i]||String(i+1),nome:'Giorno '+(ids[i]||i+1),esercizi:[]});save();renderSchedaBody();}
+function eliminaScheda(){if(!confirm('Eliminare la scheda?'))return;S.schede.splice(scIdx,1);save();goTo('home');}
+function miniChart(st,cid){
+  var el=document.getElementById(cid);if(!el)return;
+  var last=st.slice(-5);var maxKg=0;for(var i=0;i<last.length;i++){if(last[i].kg>maxKg)maxKg=last[i].kg;}
+  if(maxKg===0){el.innerHTML='';return;}
+  var f=st[0],l=st[st.length-1];var pct=f.kg>0?(((l.kg-f.kg)/f.kg)*100).toFixed(1):0;var col=pct>=0?'var(--gr)':'var(--re)';
+  var bars='<div class="bwrap">';
+  for(var i=0;i<last.length;i++){var s=last[i];var h=Math.round((s.kg/maxKg)*60)||4;var isL=i===last.length-1;var dt=new Date(s.data+'T00:00:00');bars+='<div class="bcol"><div class="bval">'+(s.kg||'')+'</div><div class="bbar" style="height:'+h+'px;background:'+(isL?'var(--y)':'var(--sur2)')+';border:1px solid '+(isL?'var(--y)':'var(--brd)')+'"></div><div class="blbl">'+dt.getDate()+'/'+(dt.getMonth()+1)+'</div></div>';}
+  bars+='</div>';
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;">Progressione</p><span style="font-size:12px;font-weight:600;font-family:Oswald;color:'+col+';">'+(pct>=0?'+':'')+pct+'%</span></div>'+bars;
+}
 async function aiSchedaAnalisi(){
-  const box=document.getElementById('ai-sc-box');const txt=document.getElementById('ai-sc-txt');
-  box.style.display='block';txt.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">Analisi in corso…</p>';
-  const p=S.profilo||{};
-  const info=scAttiva.giorni.map(g=>g.nome+': '+g.esercizi.map(e=>e.nome).join(', ')).join(' | ');
-  try{const r=await callAI('Sei un personal trainer. Analizza: '+scAttiva.nome+'. Livello: '+p.livello+', '+p.eta+' anni, '+p.peso+' kg. Giorni: '+info+'. Dai valutazione in 3-4 frasi: qualità, bilanciamento, 1-2 suggerimenti. Italiano, diretto.',300);txt.innerHTML='<p style="font-size:13px;line-height:1.6;">'+r+'</p>';}
-  catch{txt.innerHTML='<p style="font-size:13px;color:var(--mu);">Connessione non disponibile.</p>';}
+  var box=document.getElementById('ai-sc-box');var txt=document.getElementById('ai-sc-txt');box.style.display='block';txt.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">Analisi in corso...</p>';
+  var p=S.profilo||{};var info='';for(var gi=0;gi<scAttiva.giorni.length;gi++){var g=scAttiva.giorni[gi];var nomi=[];for(var ei=0;ei<g.esercizi.length;ei++){nomi.push(g.esercizi[ei].nome);}info+=g.nome+': '+nomi.join(', ')+' | ';}
+  try{var r=await callAI('Sei un personal trainer. Analizza: '+scAttiva.nome+'. Livello: '+(p.livello||'')+', '+(p.eta||'')+' anni. Giorni: '+info+'. Valutazione in 3-4 frasi. Italiano.',300);txt.innerHTML='<p style="font-size:13px;line-height:1.6;">'+r+'</p>';}
+  catch(e){txt.innerHTML='<p style="font-size:13px;color:var(--mu);">Connessione non disponibile.</p>';}
 }
 
 // ESERCIZIO DETAIL
 function apriEs(nomeEnc,gi){
   esNome=decodeURIComponent(nomeEnc);esGi=gi;esTab_='sets';
-  const es=scAttiva.giorni[gi].esercizi.find(e=>e.nome===esNome);if(!es)return;
-  document.getElementById('es-nm').textContent=es.nome;
-  document.getElementById('es-mu').textContent=es.muscolo||'';
-  ['sets','analisi','1rm'].forEach(t=>document.getElementById('tab-'+t).className='segb'+(t==='sets'?' on':''));
+  var es=null;for(var i=0;i<scAttiva.giorni[gi].esercizi.length;i++){if(scAttiva.giorni[gi].esercizi[i].nome===esNome){es=scAttiva.giorni[gi].esercizi[i];break;}}
+  if(!es)return;
+  document.getElementById('es-nm').textContent=es.nome;document.getElementById('es-mu').textContent=es.muscolo||'';
+  var tabs=['sets','analisi','1rm'];for(var i=0;i<tabs.length;i++){document.getElementById('tab-'+tabs[i]).className='segb'+(tabs[i]==='sets'?' on':'');}
   renderEsCont(es);goTo('esercizio');
 }
-function esTab(tab){esTab_=tab;['sets','analisi','1rm'].forEach(t=>document.getElementById('tab-'+t).className='segb'+(t===tab?' on':''));const es=scAttiva.giorni[esGi].esercizi.find(e=>e.nome===esNome);if(es)renderEsCont(es);}
+function esTab(tab){
+  esTab_=tab;var tabs=['sets','analisi','1rm'];for(var i=0;i<tabs.length;i++){document.getElementById('tab-'+tabs[i]).className='segb'+(tabs[i]===tab?' on':'');}
+  var es=null;for(var i=0;i<scAttiva.giorni[esGi].esercizi.length;i++){if(scAttiva.giorni[esGi].esercizi[i].nome===esNome){es=scAttiva.giorni[esGi].esercizi[i];break;}}
+  if(es)renderEsCont(es);
+}
 function renderEsCont(es){
-  const el=document.getElementById('es-cont');const st=es.storia||[];
+  var el=document.getElementById('es-cont');var st=es.storia||[];
   if(esTab_==='sets'){
-    if(!st.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">📭</div><p class="ow" style="font-size:18px;">Nessuna sessione</p><p style="font-size:13px;color:var(--mu);">Allenati per vedere lo storico</p></div>';return;}
-    const ult=st[st.length-1];const pen=st.length>1?st[st.length-2]:null;
-    const volU=ult.kg*ult.serie*ult.rip;const dKg=pen?(ult.kg-pen.kg).toFixed(1):null;
-    const dVol=pen&&pen.kg*pen.serie*pen.rip>0?(((volU-pen.kg*pen.serie*pen.rip)/(pen.kg*pen.serie*pen.rip))*100).toFixed(1):null;
-    function dH(v,u){if(v===null||v===undefined)return '';const pos=parseFloat(v)>=0;return '<div class="stdelta" style="color:'+(pos?'var(--gr)':'var(--re)')+';">'+(pos?'▲':'▼')+' '+Math.abs(v)+(u||'')+'</div>';}
-    let html='<div style="display:flex;gap:8px;margin-bottom:20px;"><div class="stbox"><div class="stval">'+(ult.kg>0?ult.kg+' kg':'BW')+'</div><div class="stlbl">Carico</div>'+dH(dKg,' kg')+'</div><div class="stbox"><div class="stval">'+ult.serie+'</div><div class="stlbl">Serie</div></div><div class="stbox"><div class="stval">'+ult.rip+'</div><div class="stlbl">Rip</div></div><div class="stbox"><div class="stval">'+(volU>0?volU:'—')+'</div><div class="stlbl">Volume</div>'+dH(dVol,'%')+'</div></div>';
-    [...st].reverse().forEach(function(s){const dt=new Date(s.data+'T00:00:00');const ds=dt.getDate()+' '+MESI_S[dt.getMonth()]+' '+dt.getFullYear();html+='<div style="margin-bottom:16px;"><div style="font-family:Oswald;font-size:13px;font-weight:600;color:var(--y);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--brd);">'+ds+'</div>';for(let i=0;i<s.serie;i++){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;'+(i<s.serie-1?'border-bottom:1px solid var(--brd);':'')+'"><div style="width:24px;height:24px;border-radius:50%;background:var(--sur2);display:flex;align-items:center;justify-content:center;font-family:Oswald;font-size:11px;font-weight:700;color:var(--mu);">'+(i+1)+'</div><span style="font-size:13px;color:var(--mu);flex:1;margin-left:10px;">Serie '+(i+1)+'</span><span class="ow" style="font-size:15px;font-weight:600;color:var(--y);margin-right:16px;">'+s.rip+' rep</span><span class="ow" style="font-size:15px;font-weight:600;">'+(s.kg>0?s.kg+' kg':'BW')+'</span></div>';}if(s.note)html+='<p style="font-size:12px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+s.note+'</p>';html+='</div>';});
+    if(!st.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">📭</div><p class="ow" style="font-size:18px;">Nessuna sessione</p></div>';return;}
+    var ult=st[st.length-1];var pen=st.length>1?st[st.length-2]:null;var volU=ult.kg*ult.serie*ult.rip;
+    var dKg=pen?(ult.kg-pen.kg).toFixed(1):null;var dVol=pen&&(pen.kg*pen.serie*pen.rip)>0?(((volU-pen.kg*pen.serie*pen.rip)/(pen.kg*pen.serie*pen.rip))*100).toFixed(1):null;
+    function dH(v,u){if(v===null)return '';var pos=parseFloat(v)>=0;return '<div class="stdelta" style="color:'+(pos?'var(--gr)':'var(--re)')+';">'+(pos?'▲':'▼')+' '+Math.abs(v)+(u||'')+'</div>';}
+    var html='<div style="display:flex;gap:8px;margin-bottom:20px;"><div class="stbox"><div class="stval">'+(ult.kg>0?ult.kg+' kg':'BW')+'</div><div class="stlbl">Carico</div>'+dH(dKg,' kg')+'</div><div class="stbox"><div class="stval">'+ult.serie+'</div><div class="stlbl">Serie</div></div><div class="stbox"><div class="stval">'+ult.rip+'</div><div class="stlbl">Rip</div></div><div class="stbox"><div class="stval">'+(volU>0?volU:'-')+'</div><div class="stlbl">Volume</div>'+dH(dVol,'%')+'</div></div>';
+    for(var i=st.length-1;i>=0;i--){var s=st[i];var dt=new Date(s.data+'T00:00:00');var ds=dt.getDate()+' '+MESI_S[dt.getMonth()]+' '+dt.getFullYear();html+='<div style="margin-bottom:16px;"><div style="font-family:Oswald;font-size:13px;font-weight:600;color:var(--y);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--brd);">'+ds+'</div>';for(var j=0;j<s.serie;j++){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;'+(j<s.serie-1?'border-bottom:1px solid var(--brd);':'')+'"><div style="width:24px;height:24px;border-radius:50%;background:var(--sur2);display:flex;align-items:center;justify-content:center;font-family:Oswald;font-size:11px;font-weight:700;color:var(--mu);">'+(j+1)+'</div><span style="font-size:13px;color:var(--mu);flex:1;margin-left:10px;">Serie '+(j+1)+'</span><span class="ow" style="font-size:15px;font-weight:600;color:var(--y);margin-right:16px;">'+s.rip+' rep</span><span class="ow" style="font-size:15px;font-weight:600;">'+(s.kg>0?s.kg+' kg':'BW')+'</span></div>';}if(s.note)html+='<p style="font-size:12px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+s.note+'</p>';html+='</div>';}
     el.innerHTML=html;
   }else if(esTab_==='analisi'){
-    if(st.length<2){el.innerHTML='<div class="empty"><div style="font-size:48px;">📊</div><p class="ow" style="font-size:18px;">Dati insufficienti</p><p style="font-size:13px;color:var(--mu);">Servono almeno 2 sessioni</p></div>';return;}
-    const f=st[0],l=st[st.length-1];const pK=f.kg>0?(((l.kg-f.kg)/f.kg)*100).toFixed(1):0;const pV=(f.kg*f.serie*f.rip)>0?(((l.kg*l.serie*l.rip-f.kg*f.serie*f.rip)/(f.kg*f.serie*f.rip))*100).toFixed(1):0;
-    const last6=st.slice(-6);const mKg=Math.max(...last6.map(s=>s.kg||0));const mVl=Math.max(...last6.map(s=>s.kg*s.serie*s.rip));
-    function bld(lbl,vals,maxV,type){let bars='<div class="bwrap" style="height:90px;margin-bottom:20px;">';vals.forEach(function(s,i){const v=type==='kg'?s.kg:(s.kg*s.serie*s.rip);const h=maxV>0?Math.round((v/maxV)*70):4;const isL=i===vals.length-1;const dt=new Date(s.data+'T00:00:00');bars+='<div class="bcol"><div class="bval">'+v+'</div><div class="bbar" style="height:'+h+'px;background:'+(isL?'var(--y)':'var(--sur2)')+';border:1px solid '+(isL?'var(--y)':'var(--brd)')+'"></div><div class="blbl">'+dt.getDate()+'/'+(dt.getMonth()+1)+'</div></div>';});return '<p class="ow" style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--mu);">'+lbl+'</p>'+bars+'</div>';}
-    el.innerHTML='<div style="display:flex;gap:8px;margin-bottom:20px;"><div class="stbox"><div class="stval" style="color:'+(pK>=0?'var(--gr)':'var(--re)')+';">'+(pK>=0?'+':'')+pK+'%</div><div class="stlbl">Carico</div></div><div class="stbox"><div class="stval" style="color:'+(pV>=0?'var(--gr)':'var(--re)')+';">'+(pV>=0?'+':'')+pV+'%</div><div class="stlbl">Volume</div></div></div>'+bld('Carico (kg)',last6,mKg,'kg')+bld('Volume (kg)',last6,mVl,'vol');
+    if(st.length<2){el.innerHTML='<div class="empty"><div style="font-size:48px;">📊</div><p class="ow" style="font-size:18px;">Servono almeno 2 sessioni</p></div>';return;}
+    var f=st[0],l=st[st.length-1];var pK=f.kg>0?(((l.kg-f.kg)/f.kg)*100).toFixed(1):0;var pV=(f.kg*f.serie*f.rip)>0?(((l.kg*l.serie*l.rip-f.kg*f.serie*f.rip)/(f.kg*f.serie*f.rip))*100).toFixed(1):0;
+    var last6=st.slice(-6);var mKg=0,mVl=0;for(var i=0;i<last6.length;i++){if(last6[i].kg>mKg)mKg=last6[i].kg;var vv=last6[i].kg*last6[i].serie*last6[i].rip;if(vv>mVl)mVl=vv;}
+    function bld(lbl,vals,maxV,type){var bars='<div class="bwrap" style="height:90px;margin-bottom:20px;">';for(var i=0;i<vals.length;i++){var s=vals[i];var v=type==='kg'?s.kg:(s.kg*s.serie*s.rip);var h=maxV>0?Math.round((v/maxV)*70):4;var isL=i===vals.length-1;var dt=new Date(s.data+'T00:00:00');bars+='<div class="bcol"><div class="bval">'+v+'</div><div class="bbar" style="height:'+h+'px;background:'+(isL?'var(--y)':'var(--sur2)')+';border:1px solid '+(isL?'var(--y)':'var(--brd)')+'"></div><div class="blbl">'+dt.getDate()+'/'+(dt.getMonth()+1)+'</div></div>';}return '<p class="ow" style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--mu);">'+lbl+'</p>'+bars+'</div>';}
+    el.innerHTML='<div style="display:flex;gap:8px;margin-bottom:20px;"><div class="stbox"><div class="stval" style="color:'+(pK>=0?'var(--gr)':'var(--re)')+';">'+(pK>=0?'+':'')+pK+'%</div><div class="stlbl">Carico</div></div><div class="stbox"><div class="stval" style="color:'+(pV>=0?'var(--gr)':'var(--re)')+';">'+(pV>=0?'+':'')+pV+'%</div><div class="stlbl">Volume</div></div></div>'+bld('Carico (kg)',last6,mKg,'kg')+bld('Volume',last6,mVl,'vol');
   }else{
     if(!st.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">🏆</div><p class="ow" style="font-size:18px;">Nessun dato</p></div>';return;}
-    const ult=st[st.length-1];const rm=ult.kg>0?+(ult.kg*(1+ult.rip/30)).toFixed(1):0;const best=Math.max(...st.filter(s=>s.kg>0).map(s=>+(s.kg*(1+s.rip/30)).toFixed(1)));
-    el.innerHTML='<div style="text-align:center;padding:24px 0 32px;"><p style="font-size:13px;color:var(--mu);margin-bottom:8px;">1RM stimato (Epley)</p><p class="ow" style="font-size:56px;font-weight:700;color:var(--y);">'+rm+' kg</p><p style="font-size:12px;color:var(--mu);margin-top:4px;">Basato su '+ult.kg+' kg × '+ult.rip+' rip</p></div><div style="display:flex;gap:8px;margin-bottom:24px;"><div class="stbox"><div class="stval">'+best+' kg</div><div class="stlbl">Best 1RM</div></div><div class="stbox"><div class="stval">'+st.length+'</div><div class="stlbl">Sessioni</div></div></div><div class="card"><p class="ow" style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--mu);">% del tuo 1RM</p>'+[100,90,80,70,60].map((p,i)=>'<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<4?'border-bottom:1px solid var(--brd);':'')+'"><span style="font-size:13px;color:var(--mu);">'+p+'%</span><span class="ow" style="font-size:14px;font-weight:600;">'+(rm*p/100).toFixed(1)+' kg</span></div>').join('')+'</div>';
+    var ult=st[st.length-1];var rm=ult.kg>0?+(ult.kg*(1+ult.rip/30)).toFixed(1):0;
+    var best=0;for(var i=0;i<st.length;i++){if(st[i].kg>0){var v=+(st[i].kg*(1+st[i].rip/30)).toFixed(1);if(v>best)best=v;}}
+    var pctH='';var pcts=[100,90,80,70,60];for(var i=0;i<pcts.length;i++){pctH+='<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<4?'border-bottom:1px solid var(--brd);':'')+'"><span style="font-size:13px;color:var(--mu);">'+pcts[i]+'%</span><span class="ow" style="font-size:14px;font-weight:600;">'+( (rm*pcts[i]/100).toFixed(1))+' kg</span></div>';}
+    el.innerHTML='<div style="text-align:center;padding:24px 0 32px;"><p style="font-size:13px;color:var(--mu);margin-bottom:8px;">1RM stimato (Epley)</p><p class="ow" style="font-size:56px;font-weight:700;color:var(--y);">'+rm+' kg</p><p style="font-size:12px;color:var(--mu);margin-top:4px;">Basato su '+ult.kg+' kg × '+ult.rip+' rip</p></div><div style="display:flex;gap:8px;margin-bottom:24px;"><div class="stbox"><div class="stval">'+best+' kg</div><div class="stlbl">Best 1RM</div></div><div class="stbox"><div class="stval">'+st.length+'</div><div class="stlbl">Sessioni</div></div></div><div class="card"><p class="ow" style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--mu);">% del tuo 1RM</p>'+pctH+'</div>';
   }
 }
 
 // AI PROGRESSION
 function calcProg(storia,livello){
   if(!storia||!storia.length)return null;
-  const ult=storia[storia.length-1];const {kg,serie,rip}=ult;const inc=kg>=40?2.5:1.25;const lv=(livello||'').toLowerCase();
-  const nota=(ult.note||'').toLowerCase();const rf=['dolore','male','fastidio','infortunio','troppo pesante','non riesco','fatica eccessiva'];
-  if(rf.some(f=>nota.includes(f)))return {tipo:'deload',kg:+(kg*.9).toFixed(2),serie,rip,consiglio:'Nell\'ultima sessione hai rilevato difficoltà. Riduci a '+(+(kg*.9).toFixed(1))+' kg per consolidare la tecnica.',emoji:'⚠️'};
-  if(storia.length>=3){const u3=storia.slice(-3);if(u3.every(s=>s.kg===u3[0].kg&&s.serie===u3[0].serie&&s.rip===u3[0].rip))return {tipo:'deload',kg:+(kg*.9).toFixed(2),serie,rip,consiglio:'Plateau rilevato. Riduci a '+(+(kg*.9).toFixed(1))+' kg questa settimana.',emoji:'🔄'};}
-  const rt=lv==='principiante'?12:lv==='avanzato'?8:10;
-  if(rip<rt)return {tipo:'ripetizioni',kg,serie,rip:Math.min(rip+2,rt),consiglio:'Il peso regge. Oggi prova '+Math.min(rip+2,rt)+' rip con '+(kg>0?kg+' kg':'BW')+'.',emoji:'🔁'};
-  if(serie<4)return {tipo:'volume',kg,serie:serie+1,rip,consiglio:'Aggiungi una serie: '+(serie+1)+' × '+rip+' con '+(kg>0?kg+' kg':'BW')+'.',emoji:'📈'};
-  const np=+(kg+inc).toFixed(2);return {tipo:'peso',kg:np,serie,rip:lv==='avanzato'?Math.max(rip-2,5):rip,consiglio:kg===0?'Punta a '+(rip+1)+' rip.':'Aumenta il carico. Oggi prova '+np+' kg.',emoji:'💪'};
+  var ult=storia[storia.length-1];var kg=ult.kg,serie=ult.serie,rip=ult.rip;var inc=kg>=40?2.5:1.25;var lv=(livello||'').toLowerCase();
+  var nota=(ult.note||'').toLowerCase();var rf=['dolore','male','fastidio','infortunio','troppo pesante','non riesco'];
+  for(var i=0;i<rf.length;i++){if(nota.indexOf(rf[i])>=0)return {tipo:'deload',kg:+(kg*.9).toFixed(2),serie:serie,rip:rip,consiglio:'Ultima sessione difficile. Riduci a '+(+(kg*.9).toFixed(1))+' kg.',emoji:'⚠️'};}
+  if(storia.length>=3){var u3=storia.slice(-3);if(u3[0].kg===u3[1].kg&&u3[1].kg===u3[2].kg&&u3[0].serie===u3[1].serie&&u3[0].rip===u3[1].rip)return {tipo:'deload',kg:+(kg*.9).toFixed(2),serie:serie,rip:rip,consiglio:'Plateau rilevato. Riduci a '+(+(kg*.9).toFixed(1))+' kg questa settimana.',emoji:'🔄'};}
+  var rt=lv==='principiante'?12:lv==='avanzato'?8:10;
+  if(rip<rt)return {tipo:'ripetizioni',kg:kg,serie:serie,rip:Math.min(rip+2,rt),consiglio:'Il peso regge. Oggi prova '+Math.min(rip+2,rt)+' rip con '+(kg>0?kg+' kg':'BW')+'.',emoji:'🔁'};
+  if(serie<4)return {tipo:'volume',kg:kg,serie:serie+1,rip:rip,consiglio:'Aggiungi una serie: '+(serie+1)+' × '+rip+'.',emoji:'📈'};
+  var np=+(kg+inc).toFixed(2);return {tipo:'peso',kg:np,serie:serie,rip:lv==='avanzato'?Math.max(rip-2,5):rip,consiglio:kg===0?'Punta a '+(rip+1)+' rip.':'Oggi prova '+np+' kg.',emoji:'💪'};
 }
 
 // SESSIONE
 function avviaSessione(gi){
-  giorno=scAttiva.giorni[gi];var lv=(S.profilo&&S.profilo.livello?S.profilo.livello:'Intermedio').toLowerCase();
-  SES={esercizi:giorno.esercizi.map(function(e){
+  giorno=scAttiva.giorni[gi];
+  var lv=S.profilo&&S.profilo.livello?S.profilo.livello.toLowerCase():'intermedio';
+  var esercizi=[];
+  for(var i=0;i<giorno.esercizi.length;i++){
+    var e=giorno.esercizi[i];
     var prog=calcProg(e.storia||[],lv);
     var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
     var tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));
     var tS=prog?prog.serie:(ult?ult.serie:(e.serieInizio||3));
     var tR=prog?prog.rip:(ult?ult.rip:(e.ripInizio||10));
-    const obj=Object.assign({},e,{progAI:prog,tKg:tKg,tS:tS,tR:tR,comp:false,note:'',
-      serieLog:Array.from({length:tS},function(){return {kg:tKg,rip:tR,comp:false};})});
-    return obj;
-  }),idx:0};
-  renderSES();goTo('sessione');
+    var serieLog=[];for(var j=0;j<tS;j++){serieLog.push({kg:tKg,rip:tR,comp:false});}
+    var obj=Object.assign({},e,{progAI:prog,tKg:tKg,tS:tS,tR:tR,serieLog:serieLog,comp:false,note:''});
+    esercizi.push(obj);
+  }
+  SES={esercizi:esercizi,idx:0};renderSES();goTo('sessione');
 }
+
 function renderSES(){
-  const es=SES.esercizi[SES.idx];const ult=es.storia&&es.storia.length?es.storia[es.storia.length-1]:null;const prog=es.progAI;
-  const tc={peso:'ty',volume:'tg',ripetizioni:'tp',deload:'tr'};const tl={peso:'↑ Peso',volume:'↑ Volume',ripetizioni:'↑ Rip',deload:'Deload'};
-  const bars=SES.esercizi.map((e,i)=>'<div style="flex:1;height:4px;border-radius:2px;background:'+(e.comp?'var(--gr)':i===SES.idx?'var(--y)':'var(--brd)')+';cursor:pointer;" onclick="jumpEs('+i+')"></div>').join('');
-  const lbls=SES.esercizi.map((e,i)=>'<span style="flex:1;text-align:center;font-size:9px;font-family:Oswald;color:'+(i===SES.idx?'var(--y)':'var(--mu)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="jumpEs('+i+')">'+e.nome.split(' ')[0]+'</span>').join('');
-  let aiH='';
-  if(prog){const np=(es.storia||[]).filter(s=>s.note&&s.note.trim()).slice(-2).map(s=>'['+s.data+']: '+s.note).join(' | ');aiH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">'+prog.emoji+'</span><span class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:.08em;">AI Coach</span></div><span class="tag '+tc[prog.tipo]+'">'+tl[prog.tipo]+'</span></div><p style="font-size:13px;line-height:1.5;">'+prog.consiglio+'</p>'+(np?'<p style="font-size:11px;color:var(--mu);margin-top:8px;font-style:italic;">📝 Nota prec.: '+np+'</p>':'')+'<button id="ai-sb" onclick="chiediAISes()" style="margin-top:10px;background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:11px;font-weight:600;padding:6px 12px;cursor:pointer;">✦ Analisi approfondita</button><div id="ai-sbox" style="display:none;margin-top:10px;background:rgba(0,0,0,.3);border-radius:8px;padding:10px;"></div></div>';}
-  else if(!ult){aiH='<div style="background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:12px;padding:14px;margin-bottom:14px;"><p class="ow" style="font-size:12px;font-weight:700;color:var(--gr);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🆕 Prima volta</p><p style="font-size:13px;color:var(--gr);line-height:1.5;">Inizia con un peso che riesci a controllare bene. Fai le serie, poi ti chiedo il feedback per calibrare la prossima sessione.</p></div>';}
-  let ultH='';if(ult)ultH='<div class="cdsm" style="margin-bottom:14px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Ultima sessione · '+ult.data+'</p><div style="display:flex;gap:24px;"><div><p style="font-size:10px;color:var(--mu);">Peso</p><p class="ow" style="font-size:20px;font-weight:700;">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p></div><div><p style="font-size:10px;color:var(--mu);">Serie</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.serie+'</p></div><div><p style="font-size:10px;color:var(--mu);">Rip</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.rip+'</p></div></div>'+(ult.note?'<p style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+ult.note+'</p>':'')+'</div>';
-  const pr=es.serieLog.findIndex(s=>!s.comp);const sc=es.serieLog.filter(s=>s.comp).length;
-  let serH='';
-  es.serieLog.forEach(function(s,si){const isDone=s.comp,isAct=si===pr;const cls=isDone?'don':isAct?'act':'';const bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';const bc=(isDone||isAct)?'#111':'var(--mu)';let inp='';if(!isDone){inp='<div style="display:flex;gap:8px;margin-top:10px;">';if(es.tKg>0)inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">−</button><input id="sv'+si+'k" type="number" value="'+(s.kg||0)+'" placeholder="0" inputmode="decimal" min="0" oninput="setS('+si+',\'kg\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">−</button><input id="sv'+si+'r" type="number" value="'+(s.rip||10)+'" placeholder="10" inputmode="numeric" min="1" oninput="setS('+si+',\'rip\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div></div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';}else{inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';}serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);cursor:pointer;" onclick="modificaSerie('+si+')">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip ✎</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+(!isDone&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';});
-  const tutteOk=es.serieLog.every(s=>s.comp);
+  var es=SES.esercizi[SES.idx];
+  var ult=es.storia&&es.storia.length?es.storia[es.storia.length-1]:null;
+  var prog=es.progAI;
+  var tc={peso:'ty',volume:'tg',ripetizioni:'tp',deload:'tr'};
+  var tl={peso:'↑ Peso',volume:'↑ Volume',ripetizioni:'↑ Rip',deload:'Deload'};
+  var bars='',lbls='';
+  for(var i=0;i<SES.esercizi.length;i++){var e2=SES.esercizi[i];bars+='<div style="flex:1;height:4px;border-radius:2px;background:'+(e2.comp?'var(--gr)':i===SES.idx?'var(--y)':'var(--brd)')+';cursor:pointer;" onclick="jumpEs('+i+')"></div>';lbls+='<span style="flex:1;text-align:center;font-size:9px;font-family:Oswald;color:'+(i===SES.idx?'var(--y)':'var(--mu)')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="jumpEs('+i+')">'+e2.nome.split(' ')[0]+'</span>';}
+  var aiH='';
+  if(prog){
+    var prevNotes='';if(es.storia){for(var i=0;i<es.storia.length;i++){if(es.storia[i].note&&es.storia[i].note.trim()){prevNotes+='['+es.storia[i].data+']: '+es.storia[i].note+' | ';}}}
+    aiH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">'+prog.emoji+'</span><span class="ow" style="font-size:12px;font-weight:700;color:var(--y);text-transform:uppercase;">AI Coach</span></div><span class="tag '+tc[prog.tipo]+'">'+tl[prog.tipo]+'</span></div><p style="font-size:13px;line-height:1.5;">'+prog.consiglio+'</p>'+(prevNotes?'<p style="font-size:11px;color:var(--mu);margin-top:8px;font-style:italic;">📝 Nota prec.: '+prevNotes+'</p>':'')+'<button id="ai-sb" onclick="chiediAISes()" style="margin-top:10px;background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:11px;font-weight:600;padding:6px 12px;cursor:pointer;">✦ Analisi approfondita</button><div id="ai-sbox" style="display:none;margin-top:10px;background:rgba(0,0,0,.3);border-radius:8px;padding:10px;"></div></div>';
+  }else if(!ult){
+    aiH='<div style="background:rgba(82,201,122,.08);border:1px solid rgba(82,201,122,.3);border-radius:12px;padding:14px;margin-bottom:14px;"><p class="ow" style="font-size:12px;font-weight:700;color:var(--gr);text-transform:uppercase;margin-bottom:6px;">🆕 Prima volta</p><p style="font-size:13px;color:var(--gr);line-height:1.5;">Inizia con un peso controllabile. Fai le serie, poi ti chiedo feedback per calibrare la prossima sessione.</p></div>';
+  }
+  var ultH='';
+  if(ult)ultH='<div class="cdsm" style="margin-bottom:14px;"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;margin-bottom:6px;">Ultima sessione · '+ult.data+'</p><div style="display:flex;gap:24px;"><div><p style="font-size:10px;color:var(--mu);">Peso</p><p class="ow" style="font-size:20px;font-weight:700;">'+(ult.kg>0?ult.kg+' kg':'BW')+'</p></div><div><p style="font-size:10px;color:var(--mu);">Serie</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.serie+'</p></div><div><p style="font-size:10px;color:var(--mu);">Rip</p><p class="ow" style="font-size:20px;font-weight:700;">'+ult.rip+'</p></div></div>'+(ult.note?'<p style="font-size:11px;color:var(--mu);margin-top:6px;font-style:italic;">📝 '+ult.note+'</p>':'')+'</div>';
+  var pr=-1;for(var i=0;i<es.serieLog.length;i++){if(!es.serieLog[i].comp){pr=i;break;}}
+  var sc=0;for(var i=0;i<es.serieLog.length;i++){if(es.serieLog[i].comp)sc++;}
+  var tutteOk=(sc===es.serieLog.length&&es.serieLog.length>0);
+  var serH='';
+  for(var si=0;si<es.serieLog.length;si++){
+    var s=es.serieLog[si];var isDone=s.comp,isAct=si===pr;
+    var cls=isDone?'don':isAct?'act':'';var bb=isDone?'var(--gr)':isAct?'var(--y)':'var(--brd)';var bc=(isDone||isAct)?'#111':'var(--mu)';
+    var inp='';
+    if(!isDone){
+      inp='<div style="display:flex;gap:8px;margin-top:10px;">';
+      if(es.tKg>0){inp+='<div class="ni-wrap"><label>Kg</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'kg\',-'+(es.tKg>=20?2.5:1.25)+')">-</button><input type="number" id="sv'+si+'k" value="'+(s.kg||0)+'" placeholder="0" inputmode="decimal" min="0" oninput="setS('+si+',\'kg\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'kg\','+(es.tKg>=20?2.5:1.25)+')">+</button></div></div>';}
+      inp+='<div class="ni-wrap"><label>Rip</label><div class="ni-ctrl"><button onclick="chgS('+si+',\'rip\',-1)">-</button><input type="number" id="sv'+si+'r" value="'+(s.rip||10)+'" placeholder="10" inputmode="numeric" min="1" oninput="setS('+si+',\'rip\',this.value)" style="font-family:Oswald;font-size:18px;font-weight:600;width:56px;text-align:center;background:none;border:none;outline:none;color:var(--w);"><button onclick="chgS('+si+',\'rip\',1)">+</button></div></div>';
+      inp+='</div><button class="btn '+(isAct?'bp':'bs')+'" style="margin-top:10px;padding:10px 0;font-size:14px;" onclick="compS('+si+')">✓ Segna serie '+(si+1)+'</button>';
+    }else{
+      inp='<button onclick="uncompS('+si+')" style="background:none;border:none;color:var(--mu);font-size:11px;cursor:pointer;float:right;margin-top:-2px;">undo</button>';
+    }
+    serH+='<div class="scard '+cls+'" id="sc'+si+'"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div class="sbadge" style="background:'+bb+';color:'+bc+';">'+(isDone?'✓':si+1)+'</div>'+(isDone?'<span class="ow" style="font-size:14px;font-weight:600;color:var(--gr);cursor:pointer;" onclick="modificaSerie('+si+')">'+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+' rip ✎</span>':'<span style="font-size:12px;color:'+(isAct?'var(--y)':'var(--mu)')+';">'+(isAct?'Serie attiva':'In attesa')+'</span>')+'</div>'+((!isDone)&&es.serieLog.length>1?'<button onclick="rmS('+si+')" style="background:none;border:none;color:var(--mu);font-size:16px;cursor:pointer;">×</button>':'')+'</div>'+inp+'</div>';
+  }
   var ctaH='';
-  if(tutteOk){
+  if(!ult&&tutteOk&&!es.feedbackDato){
+    ctaH='<div style="background:var(--yd);border:1.5px solid rgba(246,177,0,.4);border-radius:14px;padding:16px;margin-bottom:14px;" id="feedback-box"><p class="ow" style="font-size:14px;font-weight:700;margin-bottom:4px;">COMODO AI - Come e andata?</p><p style="font-size:13px;color:var(--mu);margin-bottom:14px;">Valuta la fatica da 1 a 10:</p><div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">';
+    for(var n=1;n<=10;n++){ctaH+='<button onclick="selFatica('+n+')" id="fb'+n+'" style="width:38px;height:38px;border-radius:8px;background:var(--sur2);border:1.5px solid var(--brd);color:var(--w);font-family:Oswald;font-size:14px;font-weight:600;cursor:pointer;">'+n+'</button>';}
+    ctaH+='</div><textarea id="fb-note" rows="2" placeholder="Come e andata? Avresti fatto altre rip?" style="margin-bottom:12px;"></textarea><button class="btn bp" onclick="salvaFeedback()" style="padding:12px 0;font-size:14px;">Salva e vai avanti</button></div>';
+  }else if(tutteOk){
     ctaH='<button class="btn bp" style="padding:16px 0;font-size:16px;" onclick="avanzaEs()">'+(SES.idx<SES.esercizi.length-1?'→ '+SES.esercizi[SES.idx+1].nome:'Concludi Allenamento →')+'</button>';
-  } else if(sc>0){
+  }else if(sc>0){
     ctaH='<p style="text-align:center;font-size:12px;color:var(--mu);">Completa tutte le serie per avanzare</p>';
   }
-  document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;"><div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div><div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div><div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'+aiH+ultH+'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie — '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div><div style="background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Note / Domande</p><button onclick="openChat(\'sessione\')" style="background:none;border:1px solid rgba(246,177,0,.35);border-radius:14px;padding:4px 10px;color:var(--y);font-size:11px;font-family:Oswald;font-weight:600;cursor:pointer;">✦ COMODO AI</button></div><textarea id="note-ta" rows="3" placeholder="Come è andata? Fatica, dolori, domande..." style="background:transparent;border:none;padding:0;margin:0;width:100%;resize:none;outline:none;color:var(--w);font-family:Inter;font-size:13px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea></div>'+ctaH+'</div>';
+  document.getElementById('screen-sessione').innerHTML='<div style="padding:0 16px 100px;">'
+    +'<div style="display:flex;align-items:center;gap:12px;padding:28px 0 12px;"><button class="bk" onclick="goTo(\'scheda\')">‹</button><div style="flex:1;"><p style="font-size:12px;color:var(--mu);">'+giorno.nome+'</p><h2 class="ow" style="font-size:22px;font-weight:700;">'+es.nome+'</h2></div><span class="tag tm">'+(es.muscolo||'')+'</span></div>'
+    +'<div style="display:flex;gap:4px;margin-bottom:6px;">'+bars+'</div>'
+    +'<div style="display:flex;margin-bottom:16px;">'+lbls+'</div>'
+    +aiH+ultH
+    +'<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:15px;font-weight:600;">Serie - '+sc+'/'+es.serieLog.length+' completate</p><button onclick="addS()" style="background:none;border:1px solid rgba(246,177,0,.4);border-radius:6px;color:var(--y);font-size:12px;font-family:Oswald;font-weight:600;padding:4px 10px;cursor:pointer;">+ Serie</button></div>'+serH+'</div>'
+    +'<div style="background:var(--sur);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><p style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;">Note / Domande</p><button onclick="openChat(\'sessione\')" style="background:none;border:1px solid rgba(246,177,0,.35);border-radius:14px;padding:4px 10px;color:var(--y);font-size:11px;font-family:Oswald;font-weight:600;cursor:pointer;">✦ COMODO AI</button></div><textarea id="note-ta" rows="3" placeholder="Come e andata? Fatica, dolori, domande..." style="background:transparent;border:none;padding:0;margin:0;width:100%;resize:none;outline:none;color:var(--w);font-family:Inter;font-size:13px;" oninput="SES.esercizi[SES.idx].note=this.value">'+(es.note||'')+'</textarea></div>'
+    +ctaH+'</div>';
 }
+
 function jumpEs(i){SES.idx=i;renderSES();}
-function chgS(si,campo,d){
-  var s=SES.esercizi[SES.idx].serieLog[si];
-  s[campo]=+(Math.max(campo==='rip'?1:0,s[campo]+d)).toFixed(2);
-  var el=document.getElementById('sv'+si+(campo==='kg'?'k':'r'));
-  if(el)el.value=s[campo];
+function chgS(si,campo,d){var s=SES.esercizi[SES.idx].serieLog[si];s[campo]=+(Math.max(campo==='rip'?1:0,s[campo]+d)).toFixed(2);var el=document.getElementById('sv'+si+(campo==='kg'?'k':'r'));if(el)el.value=s[campo];}
+function setS(si,campo,val){var v=parseFloat(val)||0;if(v<0)v=0;SES.esercizi[SES.idx].serieLog[si][campo]=+v.toFixed(2);}
+function compS(si){var es=SES.esercizi[SES.idx];es.serieLog[si].comp=true;var ok=true;for(var i=0;i<es.serieLog.length;i++){if(!es.serieLog[i].comp){ok=false;break;}}if(ok)es.comp=true;renderSES();if(SET.timerOn)startTimer();setTimeout(function(){var n=document.getElementById('sc'+(si+1));if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},300);}
+function uncompS(si){SES.esercizi[SES.idx].serieLog[si].comp=false;SES.esercizi[SES.idx].comp=false;renderSES();}
+function addS(){var es=SES.esercizi[SES.idx];var u=es.serieLog[es.serieLog.length-1];es.serieLog.push({kg:u?u.kg:es.tKg,rip:u?u.rip:es.tR,comp:false});renderSES();}
+function rmS(si){var es=SES.esercizi[SES.idx];if(es.serieLog.length<=1)return;es.serieLog.splice(si,1);var ok=true;for(var i=0;i<es.serieLog.length;i++){if(!es.serieLog[i].comp){ok=false;break;}}if(ok)es.comp=true;renderSES();}
+function modificaSerie(si){_modSerie=si;var s=SES.esercizi[SES.idx].serieLog[si];document.getElementById('mod-kg').value=s.kg||0;document.getElementById('mod-rip').value=s.rip||0;document.getElementById('mo-modifica-serie').classList.add('on');}
+function salvaModificaSerie(){if(_modSerie<0)return;var kg=parseFloat(document.getElementById('mod-kg').value)||0;var rip=parseInt(document.getElementById('mod-rip').value)||0;SES.esercizi[SES.idx].serieLog[_modSerie].kg=kg;SES.esercizi[SES.idx].serieLog[_modSerie].rip=rip;document.getElementById('mo-modifica-serie').classList.remove('on');_modSerie=-1;renderSES();}
+function selFatica(n){feedbackFatica=n;for(var i=1;i<=10;i++){var b=document.getElementById('fb'+i);if(b){b.style.background=i===n?'var(--y)':'var(--sur2)';b.style.color=i===n?'#111':'var(--w)';b.style.borderColor=i===n?'var(--y)':'var(--brd)';}}}
+async function salvaFeedback(){
+  var es=SES.esercizi[SES.idx];var nota=(document.getElementById('fb-note')?document.getElementById('fb-note').value:'');
+  es.note='Fatica: '+feedbackFatica+'/10. '+nota;es.feedbackDato=true;
+  var p=S.profilo||{};var box=document.getElementById('feedback-box');
+  if(box)box.innerHTML='<p style="font-size:13px;color:var(--y);font-style:italic;">COMODO AI sta analizzando...</p>';
+  try{
+    var r=await callAI('Sei un PT AI. Prima sessione con "'+es.nome+'". Livello: '+(p.livello||'Intermedio')+'. Ha fatto '+es.serieLog.length+' serie con '+(es.tKg>0?es.tKg+' kg':'bodyweight')+' x '+es.tR+' rip. Feedback fatica: '+feedbackFatica+'/10. '+nota+'. 2-3 frasi: il peso era giusto? Cosa consiglio la prossima volta? Italiano, diretto.',250);
+    if(box)box.innerHTML='<p class="ow" style="font-size:12px;font-weight:700;color:var(--y);margin-bottom:6px;">COMODO AI</p><p style="font-size:13px;line-height:1.6;">'+r+'</p><button class="btn bp" onclick="avanzaEs()" style="margin-top:12px;padding:10px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';
+  }catch(e){if(box)box.innerHTML='<button class="btn bp" onclick="avanzaEs()" style="padding:12px 0;font-size:14px;">'+(SES.idx<SES.esercizi.length-1?'Avanti →':'Concludi →')+'</button>';}
 }
-function setS(si,campo,val){
-  var v=parseFloat(val)||0;
-  if(v<0)v=0;
-  SES.esercizi[SES.idx].serieLog[si][campo]=+v.toFixed(2);
+async function chiediAISes(){
+  var es=SES.esercizi[SES.idx];var btn=document.getElementById('ai-sb');var box=document.getElementById('ai-sbox');
+  if(!btn||!box)return;btn.style.display='none';box.style.display='block';box.innerHTML='<p style="font-size:12px;color:var(--y);font-style:italic;">Analisi in corso...</p>';
+  var p=S.profilo||{};var nS='';if(es.storia){for(var i=0;i<es.storia.length;i++){if(es.storia[i].note&&es.storia[i].note.trim())nS+='['+es.storia[i].data+']: '+es.storia[i].note+' ';}}
+  try{var r=await callAI('Sei un PT AI. Esercizio: "'+es.nome+'" ('+es.muscolo+'). Livello: '+(p.livello||'Intermedio')+', '+(p.eta||'')+' anni. Storico: '+JSON.stringify(es.storia||[])+'. '+(nS?'Note: '+nS+'. ':'')+' '+(es.note?'Nota oggi: '+es.note+'. ':'')+' 2-3 frasi, italiano, diretto.',250);box.innerHTML='<p style="font-size:12px;line-height:1.6;">'+r+'</p>';}
+  catch(e){box.innerHTML='<p style="font-size:12px;color:var(--mu);">Connessione non disponibile.</p>';}
 }
-function compS(si){const es=SES.esercizi[SES.idx];es.serieLog[si].comp=true;if(es.serieLog.every(s=>s.comp))es.comp=true;renderSES();if(SET.timerOn)startTimer();setTimeout(()=>{const n=document.getElementById('sc'+(si+1));if(n)n.scrollIntoView({behavior:'smooth',block:'center'});},300);}
-function uncompS(si){const es=SES.esercizi[SES.idx];es.serieLog[si].comp=false;es.comp=false;renderSES();}
-function addS(){const es=SES.esercizi[SES.idx];const u=es.serieLog[es.serieLog.length-1];es.serieLog.push({kg:u?.kg??es.tKg,rip:u?.rip??es.tR,comp:false});renderSES();}
-function rmS(si){const es=SES.esercizi[SES.idx];if(es.serieLog.length<=1)return;es.serieLog.splice(si,1);if(es.serieLog.every(s=>s.comp))es.comp=true;renderSES();}
-async function chiediAISes(){const es=SES.esercizi[SES.idx];const btn=document.getElementById('ai-sb');const box=document.getElementById('ai-sbox');if(!btn||!box)return;btn.style.display='none';box.style.display='block';box.innerHTML='<p style="font-size:12px;color:var(--y);font-style:italic;">Analisi in corso…</p>';const p=S.profilo||{};const nS=(es.storia||[]).filter(s=>s.note&&s.note.trim()).map(s=>'['+s.data+']: '+s.note).join(' | ');try{const r=await callAI('Sei un PT AI. Esercizio: "'+es.nome+'" ('+es.muscolo+'). Livello: '+(p.livello||'Intermedio')+', '+p.eta+' anni, '+p.peso+' kg. Storico: '+JSON.stringify(es.storia||[])+'. '+(nS?'Note precedenti: '+nS+'. ':'')+' '+(es.note?'Nota oggi: '+es.note+'. ':'')+' Analizza storico E note. Adatta consiglio se ci sono dolori. 2-3 frasi, italiano, diretto, numeri specifici.',250);box.innerHTML='<p style="font-size:12px;line-height:1.6;">'+r+'</p>';}catch{box.innerHTML='<p style="font-size:12px;color:var(--mu);">Connessione non disponibile.</p>';}}
 function avanzaEs(){if(SES.idx<SES.esercizi.length-1){SES.idx++;renderSES();document.getElementById('screen-sessione').scrollTop=0;}else concludi();}
 function concludi(){
-  const oggi=new Date();const iso=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
-  SES.esercizi.forEach(function(e){
+  var oggi=new Date();var iso=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
+  for(var i=0;i<SES.esercizi.length;i++){
+    var e=SES.esercizi[i];
     var kgM=e.serieLog.length?+(e.serieLog.reduce(function(s,x){return s+x.kg;},0)/e.serieLog.length).toFixed(2):e.tKg;
     var rM=e.serieLog.length?Math.round(e.serieLog.reduce(function(s,x){return s+x.rip;},0)/e.serieLog.length):e.tR;
     var entry={data:iso,kg:kgM,serie:e.serieLog.length,rip:rM,note:e.note||''};
-    // Aggiorna storia nella scheda (se non è sessione libera)
     if(scIdx>=0){
-      var esS=scAttiva.giorni.find(function(g){return g.id===giorno.id;});
-      esS=esS?esS.esercizi.find(function(x){return x.nome===e.nome;}):null;
+      var esS=null;
+      for(var gi=0;gi<scAttiva.giorni.length;gi++){if(scAttiva.giorni[gi].id===giorno.id){for(var ei=0;ei<scAttiva.giorni[gi].esercizi.length;ei++){if(scAttiva.giorni[gi].esercizi[ei].nome===e.nome){esS=scAttiva.giorni[gi].esercizi[ei];break;}}break;}}
       if(esS){if(!esS.storia)esS.storia=[];esS.storia.push(entry);}
-    } else {
-      // Sessione libera - aggiorna storia nelle schede dove l'esercizio esiste
-      S.schede.forEach(function(sc){
-        sc.giorni.forEach(function(g){
-          g.esercizi.forEach(function(es){
-            if(es.nome===e.nome){if(!es.storia)es.storia=[];es.storia.push(entry);}
-          });
-        });
-      });
+    }else{
+      for(var j=0;j<liberoEsSelezionati.length;j++){if(liberoEsSelezionati[j].nome===e.nome){if(!liberoEsSelezionati[j].storia)liberoEsSelezionati[j].storia=[];liberoEsSelezionati[j].storia.push(entry);break;}}
     }
-  });
-  S.storico.push({dataISO:iso,schedaId:scIdx,giornoId:giorno.id,giornoNome:giorno.nome,esercizi:SES.esercizi.map(e=>({nome:e.nome,muscolo:e.muscolo,note:e.note||'',serieLog:e.serieLog.map(s=>({kg:s.kg,rip:s.rip}))}))});
+  }
+  S.storico.push({dataISO:iso,schedaId:scIdx,giornoId:giorno.id,giornoNome:giorno.nome,esercizi:SES.esercizi.map(function(e){return {nome:e.nome,muscolo:e.muscolo,note:e.note||'',serieLog:e.serieLog.map(function(s){return {kg:s.kg,rip:s.rip};})};})});
   save();lastSes={giornoNome:giorno.nome,esercizi:SES.esercizi};
-  document.getElementById('comp-sub').textContent=giorno.nome+' — '+oggi.toLocaleDateString('it-IT');
-  document.getElementById('comp-lista').innerHTML=SES.esercizi.map((e,i)=>{const kg=e.serieLog.length?+(e.serieLog.reduce((s,x)=>s+x.kg,0)/e.serieLog.length).toFixed(1):e.tKg;const rip=e.serieLog.length?Math.round(e.serieLog.reduce((s,x)=>s+x.rip,0)/e.serieLog.length):e.tR;return '<div style="display:flex;justify-content:space-between;padding:10px 0;'+(i<SES.esercizi.length-1?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:14px;font-weight:500;">'+e.nome+'</p><p class="ow" style="font-size:14px;color:var(--y);">'+(e.tKg>0?kg+' kg':'BW')+' × '+rip+' × '+e.serieLog.length+'</p></div>';}).join('');
-  const vol=SES.esercizi.reduce((sum,e)=>sum+e.serieLog.reduce((s,x)=>s+x.kg*x.rip,0),0);
+  document.getElementById('comp-sub').textContent=giorno.nome+' - '+oggi.toLocaleDateString('it-IT');
+  var listaH='';
+  for(var i=0;i<SES.esercizi.length;i++){var e=SES.esercizi[i];var kg=e.serieLog.length?+(e.serieLog.reduce(function(s,x){return s+x.kg;},0)/e.serieLog.length).toFixed(1):e.tKg;var rip=e.serieLog.length?Math.round(e.serieLog.reduce(function(s,x){return s+x.rip;},0)/e.serieLog.length):e.tR;listaH+='<div style="display:flex;justify-content:space-between;padding:10px 0;'+(i<SES.esercizi.length-1?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:14px;font-weight:500;">'+e.nome+'</p><p class="ow" style="font-size:14px;color:var(--y);">'+(e.tKg>0?kg+' kg':'BW')+' × '+rip+' × '+e.serieLog.length+'</p></div>';}
+  document.getElementById('comp-lista').innerHTML=listaH;
+  var vol=0;for(var i=0;i<SES.esercizi.length;i++){for(var j=0;j<SES.esercizi[i].serieLog.length;j++){vol+=SES.esercizi[i].serieLog[j].kg*SES.esercizi[i].serieLog[j].rip;}}
   document.getElementById('comp-vol').innerHTML=vol>0?'<div style="background:var(--yd);border:1px solid rgba(246,177,0,.3);border-radius:10px;padding:14px;text-align:center;"><p style="font-size:12px;color:var(--y);text-transform:uppercase;letter-spacing:.08em;">Volume totale</p><p class="ow" style="font-size:28px;font-weight:700;color:var(--y);">'+vol.toLocaleString('it-IT')+' kg</p></div>':'';
   goTo('completato');
 }
-function condividi(){if(!lastSes)return;const p=S.profilo||{};const data=new Date().toLocaleDateString('it-IT');let txt='COMODO.fit — Riepilogo\nAtleta: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg\nData: '+data+'\nScheda: '+lastSes.giornoNome+'\n\n';lastSes.esercizi.forEach(e=>{txt+='• '+e.nome+'\n';e.serieLog.forEach((s,i)=>{txt+='  Serie '+(i+1)+': '+(s.kg>0?s.kg+' kg':'BW')+' × '+s.rip+'\n';});if(e.note)txt+='  Note: '+e.note+'\n';txt+='\n';});if(SET.trainerEmail){window.open('mailto:'+SET.trainerEmail+'?subject='+encodeURIComponent('COMODO.fit — '+data)+'&body='+encodeURIComponent(txt));}else{window.open('https://wa.me/?text='+encodeURIComponent(txt));}}
+function condividi(){if(!lastSes)return;var p=S.profilo||{};var data=new Date().toLocaleDateString('it-IT');var txt='COMODO.fit - Riepilogo\nAtleta: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg\nData: '+data+'\nScheda: '+lastSes.giornoNome+'\n\n';for(var i=0;i<lastSes.esercizi.length;i++){var e=lastSes.esercizi[i];txt+='- '+e.nome+'\n';for(var j=0;j<e.serieLog.length;j++){txt+='  Serie '+(j+1)+': '+(e.serieLog[j].kg>0?e.serieLog[j].kg+' kg':'BW')+' x '+e.serieLog[j].rip+'\n';}if(e.note)txt+='  Note: '+e.note+'\n';txt+='\n';}if(SET.trainerEmail){window.open('mailto:'+SET.trainerEmail+'?subject='+encodeURIComponent('COMODO.fit - '+data)+'&body='+encodeURIComponent(txt));}else{window.open('https://wa.me/?text='+encodeURIComponent(txt));}}
+
+// ALLENAMENTO LIBERO
+function avviaLibero(){liberoEsSelezionati=[];goTo('libero');}
+function renderLibero(){var s=document.getElementById('libero-search');if(s)s.value='';var r=document.getElementById('libero-risultati');if(r)r.innerHTML='';aggiornaLiberoLista();}
+function cercaEsLibero(q){
+  var res=document.getElementById('libero-risultati');if(!q||q.length<1){res.innerHTML='';return;}
+  q=q.toLowerCase();var trovati=[];var seen={};
+  for(var si=0;si<S.schede.length;si++){for(var gi=0;gi<S.schede[si].giorni.length;gi++){for(var ei=0;ei<S.schede[si].giorni[gi].esercizi.length;ei++){var e=S.schede[si].giorni[gi].esercizi[ei];if(!seen[e.nome]&&e.nome.toLowerCase().indexOf(q)>=0){seen[e.nome]=1;trovati.push(e);}}}}
+  for(var cat in ESP){var list=ESP[cat];for(var i=0;i<list.length;i++){if(!seen[list[i]]&&list[i].toLowerCase().indexOf(q)>=0){seen[list[i]]=1;trovati.push({nome:list[i],muscolo:cat,storia:[],kgInizio:0,serieInizio:3,ripInizio:10});}}}
+  if(!trovati.length){res.innerHTML='<p style="font-size:13px;color:var(--mu);padding:8px 0;">Nessun risultato</p>';return;}
+  var html='';
+  for(var i=0;i<Math.min(trovati.length,8);i++){
+    var e=trovati[i];var isGia=false;for(var j=0;j<liberoEsSelezionati.length;j++){if(liberoEsSelezionati[j].nome===e.nome){isGia=true;break;}}
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--brd);"><div><p style="font-size:14px;font-weight:500;">'+e.nome+'</p><p style="font-size:12px;color:var(--mu);">'+e.muscolo+'</p></div>'+(isGia?'<span style="font-size:12px;color:var(--gr);">✓ Aggiunto</span>':'<button onclick="aggiungiEsLibero(\''+encodeURIComponent(e.nome)+'\',\''+encodeURIComponent(e.muscolo)+'\')" style="background:var(--y);border:none;border-radius:6px;padding:6px 12px;color:#111;font-family:Oswald;font-size:12px;font-weight:600;cursor:pointer;">+ Aggiungi</button>')+'</div>';
+  }
+  res.innerHTML=html;
+}
+function aggiungiEsLibero(nomeEnc,muEnc){
+  var nome=decodeURIComponent(nomeEnc);var mu=decodeURIComponent(muEnc);
+  for(var j=0;j<liberoEsSelezionati.length;j++){if(liberoEsSelezionati[j].nome===nome)return;}
+  var esData=null;for(var si=0;si<S.schede.length;si++){for(var gi=0;gi<S.schede[si].giorni.length;gi++){for(var ei=0;ei<S.schede[si].giorni[gi].esercizi.length;ei++){if(S.schede[si].giorni[gi].esercizi[ei].nome===nome){esData=S.schede[si].giorni[gi].esercizi[ei];break;}}}}
+  if(!esData)esData={nome:nome,muscolo:mu,storia:[],kgInizio:0,serieInizio:3,ripInizio:10};
+  liberoEsSelezionati.push(JSON.parse(JSON.stringify(esData)));
+  document.getElementById('libero-search').value='';document.getElementById('libero-risultati').innerHTML='';aggiornaLiberoLista();
+}
+function rimuoviEsLibero(idx){liberoEsSelezionati.splice(idx,1);aggiornaLiberoLista();}
+function aggiornaLiberoLista(){
+  var lista=document.getElementById('libero-lista');var btn=document.getElementById('btn-inizia-libero');
+  if(!liberoEsSelezionati.length){lista.innerHTML='<div class="empty" style="padding:24px;"><div style="font-size:40px;">⚡</div><p style="font-size:13px;color:var(--mu);margin-top:8px;">Cerca e aggiungi gli esercizi che vuoi fare oggi</p></div>';if(btn)btn.style.display='none';return;}
+  if(btn)btn.style.display='block';
+  var html='<p class="ow" style="font-size:15px;font-weight:600;margin-bottom:10px;">'+liberoEsSelezionati.length+' esercizi selezionati</p>';
+  for(var i=0;i<liberoEsSelezionati.length;i++){var e=liberoEsSelezionati[i];var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;html+='<div class="cdsm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><p class="ow" style="font-size:15px;font-weight:600;">'+e.nome+'</p><p style="font-size:12px;color:var(--mu);">'+e.muscolo+(ult?' · Ultimo: '+(ult.kg>0?ult.kg+' kg':'BW')+' × '+ult.rip:'')+'</p></div><button onclick="rimuoviEsLibero('+i+')" style="background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer;">×</button></div>';}
+  lista.innerHTML=html;
+}
+function iniziaLibero(){
+  if(!liberoEsSelezionati.length)return;
+  var giornoVirtuale={id:'L',nome:'Allenamento libero',esercizi:liberoEsSelezionati};
+  scAttiva={nome:'Allenamento libero',giorni:[giornoVirtuale]};scIdx=-1;giorno=giornoVirtuale;
+  var lv=S.profilo&&S.profilo.livello?S.profilo.livello.toLowerCase():'intermedio';
+  var esercizi=[];
+  for(var i=0;i<liberoEsSelezionati.length;i++){
+    var e=liberoEsSelezionati[i];var prog=calcProg(e.storia||[],lv);var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
+    var tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));var tS=prog?prog.serie:(ult?ult.serie:(e.serieInizio||3));var tR=prog?prog.rip:(ult?ult.rip:(e.ripInizio||10));
+    var serieLog=[];for(var j=0;j<tS;j++){serieLog.push({kg:tKg,rip:tR,comp:false});}
+    esercizi.push(Object.assign({},e,{progAI:prog,tKg:tKg,tS:tS,tR:tR,serieLog:serieLog,comp:false,note:''}));
+  }
+  SES={esercizi:esercizi,idx:0};renderSES();goTo('sessione');
+}
 
 // STORICO
-function calPrev(){let m=calM-1,y=calY;if(m<0){m=11;y--;}calM=m;calY=y;calSel=null;renderCal();}
-function calNext(){let m=calM+1,y=calY;if(m>11){m=0;y++;}calM=m;calY=y;calSel=null;renderCal();}
+function calPrev(){var m=calM-1,y=calY;if(m<0){m=11;y--;}calM=m;calY=y;calSel=null;renderCal();}
+function calNext(){var m=calM+1,y=calY;if(m>11){m=0;y++;}calM=m;calY=y;calSel=null;renderCal();}
 function renderCal(){
   document.getElementById('cal-tit').textContent=MESI[calM]+' '+calY;
-  document.getElementById('cal-head').innerHTML=GG.map(g=>'<div style="text-align:center;font-size:11px;color:var(--mu);font-family:Oswald;font-weight:500;letter-spacing:.05em;padding-bottom:6px;">'+g+'</div>').join('');
-  const primo=new Date(calY,calM,1),ultimo=new Date(calY,calM+1,0);let sd=primo.getDay()-1;if(sd<0)sd=6;
-  const today=new Date();const tStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  const cm={};S.storico.forEach(a=>cm[a.dataISO]=a);
-  let html='';for(let i=0;i<sd;i++)html+='<div></div>';
-  for(let d=1;d<=ultimo.getDate();d++){const iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');const hw=!!cm[iso],isT=iso===tStr,isSel=calSel===d;let cls='cday';if(hw)cls+=' hw';if(isT&&!isSel)cls+=' tod';if(isSel)cls+=' sel';html+='<div class="'+cls+'"'+(hw?' onclick="selDay('+d+')"':'')+' ><span>'+d+'</span>'+(hw&&!isSel?'<div class="cdot"></div>':'')+'</div>';}
+  var hh='';for(var i=0;i<GG.length;i++){hh+='<div style="text-align:center;font-size:11px;color:var(--mu);font-family:Oswald;padding-bottom:6px;">'+GG[i]+'</div>';}
+  document.getElementById('cal-head').innerHTML=hh;
+  var primo=new Date(calY,calM,1),ultimo=new Date(calY,calM+1,0);var sd=primo.getDay()-1;if(sd<0)sd=6;
+  var today=new Date();var tStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var cm={};for(var i=0;i<S.storico.length;i++){cm[S.storico[i].dataISO]=S.storico[i];}
+  var html='';for(var i=0;i<sd;i++){html+='<div></div>';}
+  for(var d=1;d<=ultimo.getDate();d++){var iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');var hw=!!cm[iso],isT=iso===tStr,isSel=calSel===d;var cls='cday';if(hw)cls+=' hw';if(isT&&!isSel)cls+=' tod';if(isSel)cls+=' sel';html+='<div class="'+cls+'"'+(hw?' onclick="selDay('+d+')"':'')+' ><span>'+d+'</span>'+(hw&&!isSel?'<div class="cdot"></div>':'')+'</div>';}
   document.getElementById('cal-grid').innerHTML=html;renderCalDet();
 }
-function selDay(d){calSel=calSel===d?null:d;renderCal();if(calSel)setTimeout(()=>document.getElementById('cal-det').scrollIntoView({behavior:'smooth',block:'start'}),100);}
+function selDay(d){calSel=calSel===d?null:d;renderCal();if(calSel)setTimeout(function(){document.getElementById('cal-det').scrollIntoView({behavior:'smooth',block:'start'});},100);}
 function renderCalDet(){
-  const el=document.getElementById('cal-det');
+  var el=document.getElementById('cal-det');
   if(!calSel){el.innerHTML='<p style="text-align:center;font-size:13px;color:var(--mu);margin-top:8px;">Tocca un giorno verde per vedere i dettagli</p>';return;}
-  const iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(calSel).padStart(2,'0');const a=S.storico.find(x=>x.dataISO===iso);if(!a){el.innerHTML='';return;}
-  const righe=a.esercizi.map((e,i)=>{const kg=e.serieLog&&e.serieLog[0]?e.serieLog[0].kg:0;const rip=e.serieLog&&e.serieLog[0]?e.serieLog[0].rip:0;return '<div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;padding:9px 0;'+(i<a.esercizi.length-1?'border-bottom:1px solid var(--brd);':'')+'align-items:center;"><p style="font-size:14px;font-weight:500;">'+e.nome+'</p><p class="ow" style="font-size:14px;color:var(--y);text-align:right;">'+(kg>0?kg+' kg':'BW')+'</p><p class="ow" style="font-size:14px;text-align:right;">'+(e.serieLog?e.serieLog.length:'—')+'</p><p class="ow" style="font-size:14px;text-align:right;">'+rip+'</p>'+(e.note?'<p style="font-size:11px;color:var(--mu);grid-column:1/-1;font-style:italic;">📝 '+e.note+'</p>':'')+'</div>';}).join('');
-  const vol=a.esercizi.reduce((s,e)=>s+(e.serieLog?e.serieLog.reduce((ss,x)=>ss+x.kg*x.rip,0):0),0);
-  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:17px;font-weight:600;color:var(--y);">'+calSel+' '+MESI[calM]+'</p><span class="tag ty">'+a.giornoNome+'</span></div><div class="card"><div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--brd);">'+['Esercizio','Peso','Serie','Rip'].map((h,i)=>'<p style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;'+(i>0?'text-align:right;':'')+'">'+h+'</p>').join('')+'</div>'+righe+(vol>0?'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;"><p style="font-size:12px;color:var(--mu);">Volume totale</p><p class="ow" style="font-size:15px;font-weight:700;color:var(--y);">'+vol.toLocaleString('it-IT')+' kg</p></div>':'')+'</div>';
+  var iso=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(calSel).padStart(2,'0');var a=null;for(var i=0;i<S.storico.length;i++){if(S.storico[i].dataISO===iso){a=S.storico[i];break;}}if(!a){el.innerHTML='';return;}
+  var righe='';for(var i=0;i<a.esercizi.length;i++){var e=a.esercizi[i];var kg=e.serieLog&&e.serieLog[0]?e.serieLog[0].kg:0;var rip=e.serieLog&&e.serieLog[0]?e.serieLog[0].rip:0;righe+='<div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;padding:9px 0;'+(i<a.esercizi.length-1?'border-bottom:1px solid var(--brd);':'')+'align-items:center;"><p style="font-size:14px;font-weight:500;">'+e.nome+'</p><p class="ow" style="font-size:14px;color:var(--y);text-align:right;">'+(kg>0?kg+' kg':'BW')+'</p><p class="ow" style="font-size:14px;text-align:right;">'+(e.serieLog?e.serieLog.length:'-')+'</p><p class="ow" style="font-size:14px;text-align:right;">'+rip+'</p>'+(e.note?'<p style="font-size:11px;color:var(--mu);grid-column:1/-1;font-style:italic;">📝 '+e.note+'</p>':'')+'</div>';}
+  var vol=0;for(var i=0;i<a.esercizi.length;i++){if(a.esercizi[i].serieLog){for(var j=0;j<a.esercizi[i].serieLog.length;j++){vol+=a.esercizi[i].serieLog[j].kg*a.esercizi[i].serieLog[j].rip;}}}
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p class="ow" style="font-size:17px;font-weight:600;color:var(--y);">'+calSel+' '+MESI[calM]+'</p><span class="tag ty">'+a.giornoNome+'</span></div><div class="card"><div style="display:grid;grid-template-columns:1fr 64px 48px 48px;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--brd);"><p style="font-size:10px;color:var(--mu);text-transform:uppercase;">Esercizio</p><p style="font-size:10px;color:var(--mu);text-transform:uppercase;text-align:right;">Peso</p><p style="font-size:10px;color:var(--mu);text-transform:uppercase;text-align:right;">Serie</p><p style="font-size:10px;color:var(--mu);text-transform:uppercase;text-align:right;">Rip</p></div>'+righe+(vol>0?'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;"><p style="font-size:12px;color:var(--mu);">Volume totale</p><p class="ow" style="font-size:15px;font-weight:700;color:var(--y);">'+vol.toLocaleString('it-IT')+' kg</p></div>':'')+'</div>';
 }
 
 // PROFILO
-function renderProfilo(){const p=S.profilo||{};document.getElementById('pav').textContent=p.sesso==='Uomo'?'♂':p.sesso==='Donna'?'♀':'✦';document.getElementById('ptag').textContent=p.livello||'—';const items=[{l:'Livello',v:p.livello||'—'},{l:'Peso',v:(p.peso||'—')+' kg'},{l:'Altezza',v:(p.altezza||'—')+' cm'},{l:'Età',v:(p.eta||'—')+' anni'},{l:'Sesso',v:p.sesso||'—'}];document.getElementById('p-items').innerHTML=items.map((it,i)=>'<div style="display:flex;justify-content:space-between;padding:12px 0;'+(i<items.length-1?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:14px;color:var(--mu);">'+it.l+'</p><p style="font-size:14px;font-weight:600;">'+it.v+'</p></div>').join('');const tot=S.storico.length;const mesi=[...new Set(S.storico.map(a=>a.dataISO.substring(0,7)))].length;const esT=S.storico.reduce((s,a)=>s+a.esercizi.length,0);document.getElementById('p-stats').innerHTML='<p class="ow" style="font-size:16px;font-weight:600;margin-bottom:12px;">Statistiche</p>'+[{l:'Allenamenti totali',v:tot},{l:'Mesi attivi',v:mesi},{l:'Esercizi registrati',v:esT}].map((s,i)=>'<div style="display:flex;justify-content:space-between;padding:10px 0;'+(i<2?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:13px;color:var(--mu);">'+s.l+'</p><p class="ow" style="font-size:18px;font-weight:700;color:var(--y);">'+s.v+'</p></div>').join('');}
+function renderProfilo(){
+  var p=S.profilo||{};
+  document.getElementById('pav').textContent=p.sesso==='Uomo'?'♂':p.sesso==='Donna'?'♀':'✦';
+  document.getElementById('ptag').textContent=p.livello||'-';
+  var items=[{l:'Livello',v:p.livello||'-'},{l:'Peso',v:(p.peso||'-')+' kg'},{l:'Altezza',v:(p.altezza||'-')+' cm'},{l:'Eta',v:(p.eta||'-')+' anni'},{l:'Sesso',v:p.sesso||'-'}];
+  var html='';for(var i=0;i<items.length;i++){html+='<div style="display:flex;justify-content:space-between;padding:12px 0;'+(i<items.length-1?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:14px;color:var(--mu);">'+items[i].l+'</p><p style="font-size:14px;font-weight:600;">'+items[i].v+'</p></div>';}
+  document.getElementById('p-items').innerHTML=html;
+  var tot=S.storico.length;var mesiSet={};for(var i=0;i<S.storico.length;i++){mesiSet[S.storico[i].dataISO.substring(0,7)]=1;}var mesi=Object.keys(mesiSet).length;var esT=0;for(var i=0;i<S.storico.length;i++){esT+=S.storico[i].esercizi.length;}
+  var stats=[{l:'Allenamenti totali',v:tot},{l:'Mesi attivi',v:mesi},{l:'Esercizi registrati',v:esT}];
+  var sh='<p class="ow" style="font-size:16px;font-weight:600;margin-bottom:12px;">Statistiche</p>';
+  for(var i=0;i<stats.length;i++){sh+='<div style="display:flex;justify-content:space-between;padding:10px 0;'+(i<2?'border-bottom:1px solid var(--brd);':'')+'"><p style="font-size:13px;color:var(--mu);">'+stats[i].l+'</p><p class="ow" style="font-size:18px;font-weight:700;color:var(--y);">'+stats[i].v+'</p></div>';}
+  document.getElementById('p-stats').innerHTML=sh;
+}
 
 // IMPOSTAZIONI
 function togSet(k){SET[k]=!SET[k];saveSet();renderSet();if(k==='notifOn'&&SET.notifOn)reqNotif();}
 function setTD(v){SET.timerDur=v;saveSet();renderSet();}
 function setND(v){SET.notifDays=v;saveSet();renderSet();}
-function renderSet(){const tt=document.getElementById('tog-timer');const tn=document.getElementById('tog-notif');const te=document.getElementById('trainer-email');if(tt)tt.className='tog'+(SET.timerOn?' on':'');if(tn)tn.className='tog'+(SET.notifOn?' on':'');if(te)te.value=SET.trainerEmail||'';const tdV=[60,90,120,180,240];document.getElementById('seg-timer')?.querySelectorAll('.segb').forEach((b,i)=>b.className='segb'+(SET.timerDur===tdV[i]?' on':''));document.getElementById('seg-notif')?.querySelectorAll('.segb').forEach((b,i)=>b.className='segb'+(SET.notifDays===(i+1)?' on':''));}
+function renderSet(){
+  var tt=document.getElementById('tog-timer');var tn=document.getElementById('tog-notif');var te=document.getElementById('trainer-email');
+  if(tt)tt.className='tog'+(SET.timerOn?' on':'');if(tn)tn.className='tog'+(SET.notifOn?' on':'');if(te)te.value=SET.trainerEmail||'';
+  var tdV=[60,90,120,180,240];
+  var segT=document.getElementById('seg-timer');if(segT){var btns=segT.querySelectorAll('.segb');for(var i=0;i<btns.length;i++){btns[i].className='segb'+(SET.timerDur===tdV[i]?' on':'');}}
+  var segN=document.getElementById('seg-notif');if(segN){var btns=segN.querySelectorAll('.segb');for(var i=0;i<btns.length;i++){btns[i].className='segb'+(SET.notifDays===(i+1)?' on':'');}}
+}
 
 // TIMER
-var timerEndTime=null;
+function startTimer(){stopTimer(true);timerEndTime=Date.now()+(SET.timerDur*1000);timerRem=SET.timerDur;document.getElementById('timer-ov').classList.add('on');document.getElementById('timer-ov').onclick=stopTimer;updateTUI();timerInt=setInterval(function(){timerRem=Math.round((timerEndTime-Date.now())/1000);if(timerRem<=0){stopTimer();timerDone();return;}updateTUI();},500);}
+function updateTUI(){var pct=timerRem/SET.timerDur;var off=502*(1-pct);var p=document.getElementById('tprog');if(p){p.style.strokeDashoffset=off;p.style.stroke=timerRem<=10?'var(--re)':'var(--y)';}var m=Math.floor(timerRem/60),s2=timerRem%60;var tn=document.getElementById('tnum');if(tn){tn.textContent=m+':'+(s2<10?'0':'')+s2;tn.style.color=timerRem<=10?'var(--re)':'var(--w)';}}
+function stopTimer(s){clearInterval(timerInt);timerInt=null;timerEndTime=null;document.getElementById('timer-ov').classList.remove('on');}
+function timerDone(){if(navigator.vibrate)navigator.vibrate([200,100,200]);}
+async function reqNotif(){if(typeof Notification==='undefined')return;await Notification.requestPermission();}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&timerEndTime){var rem=Math.round((timerEndTime-Date.now())/1000);if(rem<=0){stopTimer();timerDone();}else{timerRem=rem;updateTUI();}}});
 
-function startTimer(){
-  stopTimer(true);
-  timerEndTime=Date.now()+(SET.timerDur*1000);
-  timerRem=SET.timerDur;
-  document.getElementById('timer-ov').classList.add('on');
-  document.getElementById('timer-ov').onclick=stopTimer;
-  updateTUI();
-  timerInt=setInterval(function(){
-    timerRem=Math.round((timerEndTime-Date.now())/1000);
-    if(timerRem<=0){stopTimer();timerDone();return;}
-    updateTUI();
-  },500);
-}
-
-// Quando l'app torna in foreground, aggiorna il timer
-document.addEventListener('visibilitychange',function(){
-  if(!document.hidden&&timerEndTime){
-    var rem=Math.round((timerEndTime-Date.now())/1000);
-    if(rem<=0){
-      stopTimer();
-      timerDone();
-    } else {
-      timerRem=rem;
-      updateTUI();
-    }
-  }
-});
-function updateTUI(){const pct=timerRem/SET.timerDur;const off=502*(1-pct);const p=document.getElementById('tprog');if(p){p.style.strokeDashoffset=off;p.style.stroke=timerRem<=10?'var(--re)':'var(--y)';}const m=Math.floor(timerRem/60),s=timerRem%60;const tn=document.getElementById('tnum');if(tn){tn.textContent=m+':'+(s<10?'0':'')+s;tn.style.color=timerRem<=10?'var(--re)':'var(--w)';}}
-function stopTimer(s){clearInterval(timerInt);timerInt=null;document.getElementById('timer-ov').classList.remove('on');}
-function timerDone(){if(navigator.vibrate)navigator.vibrate([200,100,200]);if(SET.notifOn&&Notification.permission==='granted')new Notification('COMODO.fit',{body:'Recupero finito! Prossima serie 💪'});}
-async function reqNotif(){if(!('Notification'in window))return;await Notification.requestPermission();}
-
-// AI CHAT
+// CHAT
 function openChat(from){
   chatFrom=from||'home';
-  if(!chatHistory.length){
+  if(!chatHist.length){
     var p=S.profilo||{};
-    var welcomeMsg='Ciao! Sono COMODO AI. ';
     if(from==='home'&&S.storico.length){
       var ult=S.storico[S.storico.length-1];
-      var dt=new Date(ult.dataISO+'T00:00:00');
-      var giorni=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
-      var giorno=giorni[dt.getDay()];
-      var esNomi=ult.esercizi.slice(0,3).map(function(e){return e.nome;}).join(', ');
-      var recap='Ultimo allenamento: '+ult.giornoNome+' ('+esNomi+(ult.esercizi.length>3?' e altri...':'')+').';welcomeMsg+=recap;
-      chatHistory=[{role:'assistant',content:welcomeMsg,loading:false}];
+      var esNomi=[];for(var i=0;i<Math.min(ult.esercizi.length,3);i++){esNomi.push(ult.esercizi[i].nome);}
+      var recap='Ultimo allenamento: '+ult.giornoNome+' ('+esNomi.join(', ')+(ult.esercizi.length>3?' e altri':'')+').';
+      chatHist=[{role:'assistant',content:'Ciao! Sono COMODO AI. '+recap+' Analizzo i tuoi dati...'}];
       renderChatMsgs();
-      // Genera consiglio AI basato sull'ultimo allenamento
-      var prompt='Sei COMODO AI. L\'utente ha livello '+( p.livello||'intermedio')+', '+( p.eta||'')+' anni, '+(p.peso||'')+' kg. Ultimo allenamento: '+ult.giornoNome+' - esercizi: '+ult.esercizi.map(function(e){var sl=e.serieLog&&e.serieLog[0];return e.nome+(sl?' ('+(sl.kg>0?sl.kg+' kg':'BW')+' x'+sl.rip+')':'');}).join(', ')+'. In base a questo, dai un consiglio brevissimo (2-3 frasi max): quando allenarsi prossima volta, cosa prioritizzare, come recuperare. Tono diretto e motivante.';
-      callAI(prompt,200).then(function(r){
-        chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI. '+recap+' '+r+' Chiedimi qualsiasi cosa!'}];
-
-      }).catch(function(){
-        chatHistory=[{role:'assistant',content:'Ciao! Sono COMODO AI. Chiedimi qualsiasi cosa su allenamento, recupero o nutrizione!'}];
-        renderChatMsgs();
-      });
-    } else {
-      welcomeMsg+='Nessun allenamento registrato ancora. Inizia con una scheda e poi torna qui per consigli personalizzati!';
-      chatHistory=[{role:'assistant',content:welcomeMsg}];
+      var esStr=[];for(var i=0;i<ult.esercizi.length;i++){var e=ult.esercizi[i];var sl=e.serieLog&&e.serieLog[0];esStr.push(e.nome+(sl?' ('+(sl.kg>0?sl.kg+' kg':'BW')+' x'+sl.rip+')':''));}
+      callAI('Sei COMODO AI. Utente: '+(p.livello||'intermedio')+', '+(p.eta||'')+' anni. Ultimo allenamento: '+ult.giornoNome+' - '+esStr.join(', ')+'. Dai un consiglio in 2-3 frasi: quando riallenarsi, cosa prioritizzare, come recuperare. Italiano, diretto e motivante.',200).then(function(r){chatHist=[{role:'assistant',content:'Ciao! Sono COMODO AI. '+recap+' '+r+' Chiedimi qualsiasi cosa!'}];renderChatMsgs();}).catch(function(){chatHist=[{role:'assistant',content:'Ciao! Sono COMODO AI. Chiedimi qualsiasi cosa su allenamento, recupero o nutrizione!'}];renderChatMsgs();});
+    }else{
+      chatHist=[{role:'assistant',content:'Ciao! Sono COMODO AI, il tuo coach personale. Come posso aiutarti oggi?'}];
     }
   }
-  // Nascondi tutto
-  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
-  document.getElementById('bnav').style.display='none';
-  // Mostra chat
+  renderChatMsgs();
   var cc=document.getElementById('screen-chat');
   cc.style.cssText='display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);max-width:430px;margin:0 auto;';
-  renderChatMsgs();
-  setTimeout(function(){
-    var m=document.getElementById('chat-msgs');
-    if(m)m.scrollTop=m.scrollHeight;
-    var inp=document.getElementById('chat-in');
-    if(inp){inp.removeAttribute('disabled');inp.focus();}
-  },300);
+  document.getElementById('bnav').style.display='none';
+  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
+  setTimeout(function(){var m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;var inp=document.getElementById('chat-in');if(inp){inp.removeAttribute('disabled');inp.focus();}},300);
 }
-function chatBack(){
-  var cc=document.getElementById('screen-chat');
-  cc.style.cssText='display:none;';
-  if(chatFrom==='sessione'){goTo('sessione');renderSES();}
-  else{goTo('home');}
-}
-function clearChat(){chatHistory=[];renderChatMsgs();}
+function chatBack(){document.getElementById('screen-chat').style.cssText='display:none;';if(chatFrom==='sessione'){goTo('sessione');renderSES();}else goTo('home');}
+function clearChat(){chatHist=[];renderChatMsgs();}
 function renderChatMsgs(){
-  var el=document.getElementById('chat-msgs');
-  if(!el)return;
-  if(!chatHistory||!chatHistory.length){
-    el.innerHTML='<div class="empty"><div style="font-size:48px;">✦</div><p class="ow" style="font-size:18px;">Chiedimi qualcosa</p><p style="font-size:13px;color:var(--mu);">Sono il tuo coach personale</p></div>';
-    return;
-  }
-  var html='';
-  for(var i=0;i<chatHistory.length;i++){
-    var m=chatHistory[i];
-    var isUser=m.role==='user';
-    var isLoading=!!m.loading;
-    var txt=m.content||'';
-    html+='<div style="display:flex;'+(isUser?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:2px;">';
-    html+='<div class="'+(isUser?'cb-u':'cb-a')+'" '+(isLoading?'style="color:var(--mu);font-style:italic;"':'')+'>'+txt+'</div>';
-    html+='</div>';
-  }
-  el.innerHTML=html;
-  el.scrollTop=el.scrollHeight;
+  var el=document.getElementById('chat-msgs');if(!el)return;
+  if(!chatHist||!chatHist.length){el.innerHTML='<div class="empty"><div style="font-size:48px;">✦</div><p class="ow" style="font-size:18px;">Chiedimi qualcosa</p><p style="font-size:13px;color:var(--mu);">Sono il tuo coach personale</p></div>';return;}
+  var html='';for(var i=0;i<chatHist.length;i++){var m=chatHist[i];html+='<div style="display:flex;'+(m.role==='user'?'justify-content:flex-end':'justify-content:flex-start')+';margin-bottom:2px;"><div class="'+(m.role==='user'?'cb-u':'cb-a')+'" '+(m.loading?'style="color:var(--mu);font-style:italic;"':'')+'>'+m.content+'</div></div>';}
+  el.innerHTML=html;el.scrollTop=el.scrollHeight;
 }
-
-
 async function sendChat(){
-  var inp=document.getElementById('chat-in');
-  if(!inp)return;
-  var txt=inp.value.trim();
-  if(!txt)return;
-  inp.value='';
-  chatHistory.push({role:'user',content:txt});
-  chatHistory.push({role:'assistant',content:'…',loading:true});
-  renderChatMsgs();
-  var p=S.profilo||{};
-  var schedeI=S.schede.map(function(s){return s.nome+': '+s.giorni.map(function(g){return g.nome+'('+g.esercizi.map(function(e){return e.nome;}).join(',')+')';}).join('|');}).join('/');
-  var recN=S.storico.slice(-5).reduce(function(acc,a){return acc.concat(a.esercizi.filter(function(e){return e.note&&e.note.trim();}).map(function(e){return e.nome+': '+e.note;}));}, []).join(' | ');
-  var sys='Sei un personal trainer AI chiamato COMODO AI. Profilo utente: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg, '+(p.altezza||'')+' cm. Schede attive: '+(schedeI||'nessuna')+'. '+(recN?'Note recenti: '+recN+'. ':'')+' Rispondi in italiano, tono diretto e motivante, max 3-4 frasi. Se parla di dolori consiglia cautela e medico.';
-  var msgs=[];
-  for(var i=0;i<chatHistory.length;i++){
-    if(!chatHistory[i].loading)msgs.push({role:chatHistory[i].role,content:chatHistory[i].content});
-  }
-  msgs=msgs.slice(-10);
-  // rimuovi l'ultimo messaggio utente (lo aggiungiamo tramite callAI)
-  var prevMsgs=msgs.slice(0,-1);
-  try{
-    var r=await callAI(txt,400,sys,prevMsgs);
-    chatHistory=chatHistory.filter(function(m){return !m.loading;});
-    chatHistory.push({role:'assistant',content:r||'Non ho capito, puoi ripetere?'});
-  }catch(e){
-    chatHistory=chatHistory.filter(function(m){return !m.loading;});
-    chatHistory.push({role:'assistant',content:'Connessione non disponibile. Controlla la connessione e riprova.'});
-  }
+  var inp=document.getElementById('chat-in');if(!inp)return;var txt=inp.value.trim();if(!txt)return;inp.value='';
+  chatHist.push({role:'user',content:txt});chatHist.push({role:'assistant',content:'...',loading:true});renderChatMsgs();
+  var p=S.profilo||{};var schedeI='';for(var i=0;i<S.schede.length;i++){var sc=S.schede[i];var gArr=[];for(var gi=0;gi<sc.giorni.length;gi++){var g=sc.giorni[gi];var esArr=[];for(var ei=0;ei<g.esercizi.length;ei++){esArr.push(g.esercizi[ei].nome);}gArr.push(g.nome+'('+esArr.join(',')+')');}schedeI+=sc.nome+': '+gArr.join('|')+' / ';}
+  var sys='Sei COMODO AI, personal trainer. Profilo: '+(p.livello||'')+', '+(p.eta||'')+' anni, '+(p.peso||'')+' kg. Schede: '+(schedeI||'nessuna')+'. Rispondi in italiano, diretto, max 3-4 frasi. Se parla di dolori consiglia cautela e medico.';
+  var msgs=[];for(var i=0;i<chatHist.length;i++){if(!chatHist[i].loading)msgs.push({role:chatHist[i].role,content:chatHist[i].content});}msgs=msgs.slice(-10);var prev=msgs.slice(0,-1);
+  try{var r=await callAI(txt,400,sys,prev);chatHist=chatHist.filter(function(m){return !m.loading;});chatHist.push({role:'assistant',content:r||'Non ho capito, puoi ripetere?'});}
+  catch(e){chatHist=chatHist.filter(function(m){return !m.loading;});chatHist.push({role:'assistant',content:'Connessione non disponibile. Riprova.'});}
   renderChatMsgs();
 }
 
-
-
-// MODIFICA SERIE COMPLETATA
-var _modSerie = -1;
-function modificaSerie(si){
-  _modSerie = si;
-  var s = SES.esercizi[SES.idx].serieLog[si];
-  document.getElementById('mod-kg').value = s.kg || 0;
-  document.getElementById('mod-rip').value = s.rip || 0;
-  document.getElementById('mo-modifica-serie').classList.add('on');
-}
-function salvaModificaSerie(){
-  if(_modSerie < 0) return;
-  var kg = parseFloat(document.getElementById('mod-kg').value) || 0;
-  var rip = parseInt(document.getElementById('mod-rip').value) || 0;
-  SES.esercizi[SES.idx].serieLog[_modSerie].kg = kg;
-  SES.esercizi[SES.idx].serieLog[_modSerie].rip = rip;
-  document.getElementById('mo-modifica-serie').classList.remove('on');
-  _modSerie = -1;
-  renderSES();
-}
-
-// AI HELPER
+// AI
 async function callAI(prompt,maxTok,sys,prev){
   try{
     var msgs=prev?prev.concat([{role:'user',content:prompt}]):[{role:'user',content:prompt}];
-    var body={messages:msgs,max_tokens:maxTok||300};
-    if(sys)body.system=sys;
-    var res=await fetch('https://comodo-api.vercel.app/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    if(!res.ok){var err=await res.text();console.error('API error:',err);return 'Errore di connessione. Riprova.';}
-    var data=await res.json();
-    if(data.error){console.error('API error:',data.error);return 'Errore AI. Riprova tra poco.';}
-    var block=data.content&&data.content.find(function(b){return b.type==='text';});
+    var body={messages:msgs,max_tokens:maxTok||300};if(sys)body.system=sys;
+    var res=await fetch('https://comodo-api.vercel.app/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok)return 'Errore di connessione.';
+    var data=await res.json();if(data.error)return 'Errore AI.';
+    var block=null;for(var i=0;i<(data.content||[]).length;i++){if(data.content[i].type==='text'){block=data.content[i];break;}}
     return block?block.text:'';
-  }catch(e){
-    console.error('callAI error:',e);
-    throw e;
-  }
+  }catch(e){console.error('callAI error:',e);throw e;}
 }
 
+// CONSIGLI
+var CONSIGLI=["La progressione e re. Aggiungi sempre qualcosa: un kg, una rip, una serie.","Dormi 7-9 ore. E durante il sonno che i muscoli crescono, non in palestra.","Bevi acqua prima di sentire sete. L'idratazione influenza le prestazioni del 20%.","La tecnica prima del peso. Un movimento perfetto con 60 kg vale piu di uno sloppy con 100.","Il riscaldamento non e opzionale. 5 minuti proteggono anni di allenamento.","Mangia proteine entro 60 minuti dal workout. Il muscolo e affamato in quel momento.","La costanza batte l'intensita. 3 sedute a settimana per anni > 7 per 3 mesi.","Il dolore muscolare non misura la qualita dell'allenamento. Impara a distinguerlo.","La creatina monoidrata e il supplemento piu studiato e sicuro. Funziona.","Non saltare le gambe. Il 60% della massa muscolare e nella parte inferiore del corpo.","Registra ogni allenamento. Non puoi migliorare cio che non misuri.","Lo stretching statico prima del workout riduce la forza. Fallo dopo.","Il metabolismo basale aumenta con la massa muscolare. Piu muscolo = piu calorie bruciate a riposo.","Il caffe pre-workout aumenta le performance del 10-15%. Assumilo 30-45 min prima.","La respirazione conta. Espira nella spinta, inspira nella discesa.","Un deload ogni 4-6 settimane non e debolezza, e strategia intelligente.","Il peso sulla bilancia non misura i tuoi progressi. Misura la composizione corporea.","I muscoli stabilizzatori sono spesso il vero limite. Lavora sul core.","La frutta non fa ingrassare. L'eccesso calorico si, ma la frutta no.","Il ROM completo stimola piu fibre muscolari. Vai in profondita con sicurezza.","Il corpo si adatta in 4-6 settimane. Cambia stimolo periodicamente.","Mangiare grasso non fa ingrassare. L'eccesso calorico fa ingrassare.","La postura e un allenamento. Stai dritto anche fuori dalla palestra.","Allenare i dorsali migliora la panca piana. La catena posteriore sostiene la spinta.","La costanza nel lungo termine e piu importante di qualsiasi tecnica avanzata.","Il cortisolo alto sabota i risultati. Gestisci lo stress fuori dalla palestra.","Non ignorare i segnali del corpo. Distingui il fastidio dal dolore reale.","La massa muscolare si costruisce in anni. E un investimento a lungo termine.","Non servono 2 ore in palestra. 45-60 minuti intensi sono superiori.","Il volume totale (serie x rip x kg) e il principale driver di ipertrofia.","Non esiste il tono muscolare. Esiste muscolo presente e grasso che lo copre.","Le pause tra le serie contano. 2-3 min per forza, 60-90 sec per ipertrofia.","La dieta mediterranea e il modello alimentare piu validato per salute e performance.","Non confrontarti con gli altri. Il tuo progresso e il tuo progresso.","La mobilita si perde con l'eta se non la alleni. Inizia ora.","Non devi sentirti esausto dopo ogni allenamento. L'obiettivo e stimolare, non distruggere.","Inizia piccolo. 10 minuti al giorno sono infinitamente meglio di zero.","Il corpo realizza cio che la mente crede. Allenati anche nella testa.","Ogni rep e un voto per la versione migliore di te.","La disciplina batte la motivazione. La motivazione va e viene, la disciplina resta.","Trova un'attivita che ami. Il miglior allenamento e quello che fai davvero.","Il movimento e medicina. Le ricerche lo confermano ogni giorno.","La salute non e tutto, ma senza salute tutto il resto diventa secondario.","Prendersi cura del proprio corpo non e vanita. E rispetto per se stessi.","Il fitness non e una destinazione. E un modo di vivere.","Non smettere quando sei stanco. Smetti quando hai finito.","Ogni goccia di sudore e il tuo corpo che cambia. Abbracciala.","La forma fisica e la piattaforma su cui costruire tutto il resto.","Muoviti ogni giorno. Non per come appari ma per come ti senti.","Il corpo non mente. Ascoltalo, rispettalo, sfidalo.","Allena il corpo che hai, non quello che vorresti avere. Da li si parte.","COMODO.fit e qui per guidarti ogni passo. Tu devi solo presentarti.","Dormi bene, mangia bene, allenati bene. L'ordine conta.","La forza non e solo fisica. E anche mentale, caratteriale, abitudinaria."];
+function initConsiglio(){var oggi=new Date();var giornoDellAnno=Math.floor((oggi-new Date(oggi.getFullYear(),0,0))/86400000);var idx=((giornoDellAnno-1)%CONSIGLI.length+CONSIGLI.length)%CONSIGLI.length;var txt=document.getElementById('consiglio-txt');var num=document.getElementById('consiglio-num');if(txt)txt.textContent=CONSIGLI[idx];if(num)num.textContent='#'+(idx+1)+' / '+CONSIGLI.length;}
 
 // PROGRAMMI
 function mE(n,m,kg,ser,rip){return {nome:n,muscolo:m,storia:[],kgInizio:kg,serieInizio:ser,ripInizio:rip};}
-function mG(id,nome,es){return {id,nome,esercizi:es};}
-const PROG={
-  anziano_benessere:{nome:'Mobilità e Benessere — Senior',desc:'2 giorni · Corpo libero + attrezzi leggeri',giorni:[mG('A','Giorno A',[mE('Cerchi con le braccia','Mobilità spalle',0,3,15),mE('Wall Push-up','Petto',0,3,12),mE('Curl manubri 3kg seduto','Bicipiti',3,3,12),mE('Alzate laterali 2kg seduto','Spalle',2,3,12),mE('Rematore elastico seduto','Schiena',0,3,12),mE('Estensione tricipiti elastico','Tricipiti',0,3,12),mE('Stretching guidato','Flessibilità',0,1,300)]),mG('B','Giorno B',[mE('Squat alla sedia assistito','Gambe',0,3,10),mE('Alzate sulle punte in piedi','Polpacci',0,3,15),mE('Abduzione gambe con elastico','Glutei',0,3,12),mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Rotazioni anche in piedi','Mobilità',0,3,10),mE('Stretching isometrico gambe','Flessibilità',0,3,30)])]},
-  anziano_dimagrimento:{nome:'Attività Leggera Senior — Dimagrimento',desc:'3 giorni · Circuito bassa intensità',giorni:[mG('A','Circuito A',[mE('Camminata veloce sul posto','Cardio',0,3,120),mE('Wall Push-up','Petto',0,3,12),mE('Squat alla sedia','Gambe',0,3,12),mE('Rematore elastico','Schiena',0,3,12),mE('Alzate laterali 2kg','Spalle',2,3,12),mE('Crunch lento a terra','Addome',0,3,10)]),mG('B','Circuito B',[mE('Step touch laterale','Cardio',0,3,60),mE('Curl manubri 3kg','Bicipiti',3,3,12),mE('Leg Press leggero','Gambe',20,3,12),mE('Abduzione gambe elastico','Glutei',0,3,15),mE('Estensione tricipiti elastico','Tricipiti',0,3,12),mE('Plank sul tavolo (facile)','Core',0,3,20)]),mG('C','Circuito C',[mE('Bici stazionaria leggera','Cardio',0,1,600),mE('Alzate frontali 2kg','Spalle',2,3,12),mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Lat Machine leggera','Schiena',15,3,12),mE('Stretching full body','Flessibilità',0,1,300)])]},
-  anziano_forza:{nome:'Tonificazione Senior',desc:'2 giorni · Macchine guidate leggere',giorni:[mG('A','Giorno A',[mE('Leg Press leggera','Gambe',20,3,12),mE('Chest Press macchina','Petto',10,3,12),mE('Lat Machine leggera','Schiena',15,3,12),mE('Curl manubri 3kg seduto','Bicipiti',3,3,12),mE('Tricipiti elastico','Tricipiti',0,3,12),mE('Crunch lento a terra','Core',0,3,10)]),mG('B','Giorno B',[mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Shoulder Press macchina leggera','Spalle',8,3,12),mE('Rematore cavo basso','Schiena',15,3,12),mE('Abduzione gambe','Glutei',0,3,12),mE('Alzate laterali 2kg','Spalle',2,3,12),mE('Stretching guidato','Flessibilità',0,1,300)])]},
-  principiante_benessere:{nome:'Benessere e Movimento — Principiante',desc:'2 giorni · Macchine guidate + cardio',giorni:[mG('A','Giorno A',[mE('Camminata tapis roulant 10min','Cardio',0,1,600),mE('Leg Press leggera','Gambe',30,3,15),mE('Chest Press macchina','Petto',15,3,15),mE('Lat Machine leggera','Schiena',20,3,15),mE('Curl manubri alternati','Bicipiti',5,3,12),mE('Tricipiti cavo','Tricipiti',10,3,12),mE('Plank','Core',0,3,20)]),mG('B','Giorno B',[mE('Cyclette 10min','Cardio',0,1,600),mE('Leg Extension','Quadricipiti',15,3,15),mE('Leg Curl','Femorali',15,3,15),mE('Pec Deck leggero','Petto',15,3,15),mE('Rematore cavo basso','Schiena',20,3,15),mE('Alzate laterali 4kg','Spalle',4,3,12),mE('Crunch a terra','Addome',0,3,15)])]},
-  principiante_dimagrimento:{nome:'Dimagrimento — Principiante',desc:'3 giorni · Cardio + tonificazione',giorni:[mG('A','Giorno A',[mE('Tapis roulant inclinato 15min','Cardio',0,1,900),mE('Jumping Jack','Cardio',0,3,30),mE('Push-up sulle ginocchia','Petto',0,3,12),mE('Rematore cavo basso','Schiena',20,3,15),mE('Curl manubri','Bicipiti',5,3,12),mE('Tricipiti elastico','Tricipiti',0,3,15)]),mG('B','Giorno B',[mE('Cyclette alta intensità 15min','Cardio',0,1,900),mE('Squat a corpo libero','Gambe',0,3,15),mE('Affondi alternati','Gambe',0,3,12),mE('Hip Thrust bodyweight','Glutei',0,3,15),mE('Leg Press leggera','Quadricipiti',30,3,15),mE('Plank','Core',0,3,30)]),mG('C','Giorno C',[mE('Corsa leggera 10min','Cardio',0,1,600),mE('Burpees modificati','Full Body',0,3,10),mE('Squat jump leggero','Gambe',0,3,10),mE('Mountain climber lento','Core + Cardio',0,3,20),mE('Lat Machine','Schiena',20,3,15),mE('Shoulder Press macchina','Spalle',15,3,12)])]},
-  principiante_forza:{nome:'Forza Base — Principiante',desc:'2 giorni · Full Body con macchine',giorni:[mG('A','Giorno A',[mE('Leg Press','Gambe',40,3,12),mE('Chest Press macchina','Petto',20,3,12),mE('Lat Machine presa larga','Schiena',25,3,12),mE('Shoulder Press macchina','Spalle',15,3,12),mE('Curl manubri','Bicipiti',6,3,12),mE('Tricipiti cavo','Tricipiti',12,3,12),mE('Crunch','Core',0,3,15)]),mG('B','Giorno B',[mE('Leg Extension','Quadricipiti',20,3,12),mE('Leg Curl','Femorali',20,3,12),mE('Pec Deck','Petto',20,3,12),mE('Rematore cavo basso','Schiena',25,3,12),mE('Alzate laterali','Spalle',5,3,12),mE('Hip Thrust macchina','Glutei',30,3,12),mE('Plank','Core',0,3,30)])]},
-  principiante_massa:{nome:'Massa Muscolare — Principiante',desc:'3 giorni · Full Body volume',giorni:[mG('A','Giorno A',[mE('Leg Press','Gambe',40,4,12),mE('Chest Press macchina','Petto',20,4,12),mE('Lat Machine','Schiena',25,4,12),mE('Shoulder Press macchina','Spalle',15,3,12),mE('Curl manubri','Bicipiti',8,3,12),mE('Tricipiti cavo','Tricipiti',12,3,12)]),mG('B','Giorno B',[mE('Squat Smith machine','Gambe',40,4,12),mE('Pec Deck','Petto',20,4,12),mE('Rematore cavo basso','Schiena',25,4,12),mE('Alzate laterali','Spalle',6,3,12),mE('Curl martello','Bicipiti',8,3,12),mE('French Press manubri','Tricipiti',8,3,12)]),mG('C','Giorno C',[mE('Leg Press','Gambe',45,4,12),mE('Hip Thrust macchina','Glutei',30,3,15),mE('Lat Machine stretta','Schiena',25,4,12),mE('Alzate frontali','Spalle',5,3,12),mE('Croci pec deck','Petto',15,3,15),mE('Plank','Core',0,3,30)])]},
-  intermedio_forza:{nome:'Forza — Upper/Lower',desc:'4 giorni · Upper/Lower split',giorni:[mG('A','Upper A — Spinta',[mE('Panca Piana bilanciere','Petto',60,4,6),mE('Military Press bilanciere','Spalle',40,4,6),mE('Dips lastrati','Tricipiti',10,3,8),mE('Alzate laterali','Spalle',10,3,12),mE('Skull Crusher EZ','Tricipiti',20,3,10)]),mG('B','Upper B — Tiraggio',[mE('Trazioni lastrate','Dorsali',10,4,6),mE('Rematore bilanciere','Schiena',60,4,6),mE('Curl bilanciere EZ','Bicipiti',25,4,8),mE('Face Pull','Spalle posteriori',15,3,15),mE('Curl martello','Bicipiti',14,3,10)]),mG('C','Lower A — Squat',[mE('Squat bilanciere','Gambe',70,4,6),mE('Leg Press','Quadricipiti',100,3,10),mE('Leg Extension','Quadricipiti',35,3,12),mE('Leg Curl','Femorali',30,3,12),mE('Calf Raises','Polpacci',0,4,20)]),mG('D','Lower B — Stacco',[mE('Stacco da terra','Catena posteriore',80,4,5),mE('Romanian Deadlift','Femorali',60,3,10),mE('Hip Thrust','Glutei',50,3,12),mE('Leg Press piedi alti','Glutei',80,3,12),mE('Ab Wheel','Core',0,3,10)])]},
-  intermedio_massa:{nome:'Ipertrofia — Upper/Lower',desc:'4 giorni · Volume alto per massa',giorni:[mG('A','Upper A',[mE('Panca Piana bilanciere','Petto',60,4,10),mE('Panca Inclinata manubri','Petto alto',22,4,10),mE('Croci cavi bassi','Petto',12,3,12),mE('Military Press manubri','Spalle',20,4,10),mE('Alzate laterali','Spalle',10,4,15)]),mG('B','Upper B',[mE('Lat Machine presa larga','Dorsali',55,4,10),mE('Rematore manubri','Schiena',24,4,10),mE('Pulley basso presa stretta','Schiena bassa',40,3,12),mE('Curl bilanciere','Bicipiti',22,4,10),mE('French Press','Tricipiti',22,4,10)]),mG('C','Lower A',[mE('Squat bilanciere','Gambe',70,4,10),mE('Hack Squat','Quadricipiti',60,3,12),mE('Leg Press','Quadricipiti',100,3,12),mE('Leg Extension','Quadricipiti',35,3,15),mE('Calf Raises','Polpacci',0,5,20)]),mG('D','Lower B',[mE('Romanian Deadlift','Femorali',60,4,10),mE('Leg Curl','Femorali',30,4,12),mE('Hip Thrust','Glutei',50,4,12),mE('Bulgarian Split Squat','Gambe',20,3,10),mE('Calf Raises seduto','Soleo',30,4,20)])]},
-  intermedio_dimagrimento:{nome:'Dimagrimento — Intermedio',desc:'4 giorni · Circuiti + pesi medi',giorni:[mG('A','Giorno A',[mE('Tapis roulant HIIT 20min','Cardio',0,1,1200),mE('Panca Piana','Petto',50,3,15),mE('Trazioni assistite','Schiena',0,3,12),mE('Military Press manubri','Spalle',16,3,15),mE('Superserie Curl + Pushdown','Braccia',10,3,12)]),mG('B','Giorno B',[mE('Cyclette sprint 30s on/off','Cardio HIIT',0,8,30),mE('Squat bilanciere','Gambe',50,4,15),mE('Affondi con manubri','Gambe',12,3,12),mE('Romanian Deadlift','Femorali',50,3,12),mE('Hip Thrust','Glutei',40,3,15)]),mG('C','Giorno C',[mE('Kettlebell Swing','Full Body',16,4,15),mE('Box Step-up','Gambe',0,3,12),mE('Push-up','Petto',0,3,15),mE('Rematore cavo','Schiena',35,3,15),mE('Mountain climber','Core + Cardio',0,3,30)]),mG('D','Giorno D',[mE('Corsa moderata 30min','Cardio LISS',0,1,1800),mE('Russian Twist con peso','Core',6,3,20),mE('Leg Raise','Addome',0,3,15),mE('Ab Wheel','Core',0,3,12),mE('Stretching full body','Flessibilità',0,1,300)])]},
-  intermedio_benessere:{nome:'Benessere e Tonificazione — Intermedio',desc:'3 giorni · Full Body bilanciato',giorni:[mG('A','Giorno A',[mE('Camminata tapis roulant 15min','Cardio',0,1,900),mE('Squat bilanciere','Gambe',50,3,12),mE('Panca Piana','Petto',50,3,12),mE('Lat Machine','Schiena',45,3,12),mE('Military Press','Spalle',30,3,12),mE('Plank','Core',0,3,40)]),mG('B','Giorno B',[mE('Cyclette 15min','Cardio',0,1,900),mE('Romanian Deadlift','Femorali',50,3,12),mE('Pec Deck','Petto',20,3,12),mE('Rematore cavo basso','Schiena',40,3,12),mE('Alzate laterali','Spalle',8,3,15),mE('Hip Thrust','Glutei',40,3,15)]),mG('C','Giorno C',[mE('Ellittica 20min','Cardio',0,1,1200),mE('Curl bilanciere','Bicipiti',20,3,12),mE('Dips','Tricipiti',0,3,12),mE('Face Pull','Spalle posteriori',15,3,15),mE('Ab Wheel','Core',0,3,12),mE('Stretching full body','Flessibilità',0,1,300)])]},
-  avanzato_forza:{nome:'Forza Massimale — Powerlifting',desc:'4 giorni · Forza pura',giorni:[mG('A','Panca + Spalle',[mE('Panca Piana bilanciere','Petto',90,5,3),mE('Panca Inclinata bilanciere','Petto alto',70,4,5),mE('Military Press bilanciere','Spalle',55,4,5),mE('Dips lastrati','Tricipiti',20,4,6),mE('Alzate laterali cavi','Spalle',12,4,15)]),mG('B','Stacco + Schiena',[mE('Stacco da terra','Catena posteriore',130,5,3),mE('Deficit Deadlift','Posteriore',100,3,5),mE('Rematore Pendlay','Schiena',80,4,5),mE('Trazioni lastrate','Dorsali',20,4,6),mE('Scrollate bilanciere','Trapezio',100,3,8)]),mG('C','Squat + Accessori',[mE('Squat bilanciere','Gambe',110,5,3),mE('Paused Squat','Gambe',80,3,5),mE('Leg Press pesante','Quadricipiti',160,3,8),mE('Romanian Deadlift','Femorali',80,3,8),mE('Calf Raises','Polpacci',80,5,15)]),mG('D','Upper Volume',[mE('Panca Piana 70%','Petto',65,3,8),mE('Trazioni','Dorsali',0,3,10),mE('Military Press manubri','Spalle',24,3,10),mE('Curl bilanciere EZ','Bicipiti',28,3,10),mE('Face Pull','Spalle posteriori',18,3,15)])]},
-  avanzato_massa:{nome:'Ipertrofia Avanzata — Push/Pull/Legs',desc:'5 giorni · PPL split',giorni:[mG('A','Push — Petto Spalle Tricipiti',[mE('Panca Piana bilanciere','Petto',85,4,8),mE('Panca Inclinata manubri','Petto alto',30,4,10),mE('Croci cavi bassi','Petto',15,3,12),mE('Military Press bilanciere','Spalle',55,4,8),mE('Alzate laterali cavi','Spalle',12,4,20),mE('Skull Crusher EZ','Tricipiti',28,3,10)]),mG('B','Pull — Schiena Bicipiti',[mE('Trazioni con peso','Dorsali',15,4,8),mE('Rematore bilanciere presa prona','Schiena',80,4,8),mE('Lat Machine presa supina','Dorsali interni',60,3,10),mE('Face Pull corda','Posteriori spalla',18,4,20),mE('Curl bilanciere EZ','Bicipiti',28,4,10),mE('Curl inclinato manubri','Bicipiti',14,3,12)]),mG('C','Legs — Quadricipiti',[mE('Squat bilanciere','Gambe',100,4,8),mE('Hack Squat','Quadricipiti',70,3,10),mE('Leg Press 45°','Quadricipiti',140,3,12),mE('Leg Extension','Quadricipiti',40,3,15),mE('Leg Curl sdraiato','Femorali',35,3,12),mE('Calf Raises in piedi','Polpacci',70,5,20)]),mG('D','Upper — Volume + Braccia',[mE('Panca Inclinata bilanciere','Petto alto',70,4,10),mE('Lat Machine presa larga','Dorsali',65,4,10),mE('Alzate laterali','Spalle',12,4,15),mE('Superserie Curl + Dips','Braccia',0,4,10),mE('Ab Wheel','Core',0,3,15)]),mG('E','Legs — Stacco dominante',[mE('Stacco da terra','Catena posteriore',120,4,5),mE('Romanian Deadlift','Femorali',80,4,10),mE('Hip Thrust bilanciere','Glutei',70,4,12),mE('Bulgarian Split Squat','Gambe',24,3,10),mE('Calf Raises seduto','Soleo',35,4,20)])]},
-  avanzato_dimagrimento:{nome:'Recomposizione Corporea — Avanzato',desc:'5 giorni · Forza + metabolico',giorni:[mG('A','Upper Forza + Cardio',[mE('Panca Piana bilanciere','Petto',75,4,8),mE('Trazioni','Dorsali',0,4,10),mE('Military Press bilanciere','Spalle',45,3,10),mE('Curl bilanciere','Bicipiti',25,3,12),mE('Tapis roulant inclinato 20min','Cardio LISS',0,1,1200)]),mG('B','Lower Forza + Cardio',[mE('Squat bilanciere','Gambe',90,4,8),mE('Romanian Deadlift','Femorali',70,3,10),mE('Hip Thrust','Glutei',60,3,12),mE('Leg Press','Quadricipiti',110,3,12),mE('Cyclette HIIT 20min','Cardio HIIT',0,1,1200)]),mG('C','Full Body Metabolico',[mE('Kettlebell Swing','Full Body',20,5,15),mE('Push-up esplosivi','Petto',0,4,12),mE('Box Jump','Gambe + Esplosività',0,4,10),mE('Rematore TRX','Schiena',0,4,12),mE('Burpees','Full Body + Cardio',0,4,10)]),mG('D','Upper Volume',[mE('Panca Inclinata manubri','Petto',26,4,12),mE('Lat Machine','Dorsali',60,4,12),mE('Alzate laterali','Spalle',10,4,15),mE('Face Pull','Spalle posteriori',15,3,15),mE('Superserie Curl+Pushdown','Braccia',12,3,12)]),mG('E','Cardio + Core',[mE('Corsa o ellittica 30min','Cardio LISS',0,1,1800),mE('Russian Twist pesato','Core',8,3,20),mE('Leg Raise','Addome',0,3,15),mE('Ab Wheel','Core',0,3,12),mE('Stretching full body 15min','Flessibilità',0,1,900)])]},
-  avanzato_benessere:{nome:'Performance e Benessere — Avanzato',desc:'4 giorni · Forza + mobilità',giorni:[mG('A','Upper',[mE('Panca Piana bilanciere','Petto',70,4,8),mE('Trazioni','Dorsali',0,4,8),mE('Military Press','Spalle',45,3,10),mE('Face Pull','Spalle posteriori',15,3,15),mE('Curl bilanciere','Bicipiti',22,3,12),mE('Dips','Tricipiti',0,3,12)]),mG('B','Lower',[mE('Squat bilanciere','Gambe',80,4,8),mE('Romanian Deadlift','Femorali',65,3,10),mE('Hip Thrust','Glutei',55,3,12),mE('Calf Raises','Polpacci',0,4,20),mE('Ab Wheel','Core',0,3,12)]),mG('C','Mobilità + Core',[mE('Yoga flow o stretching attivo','Mobilità',0,1,1200),mE('Turkish Get-up','Full Body',10,3,5),mE('Plank varianti','Core',0,4,40),mE('Russian Twist','Core',8,3,20),mE('Respirazione diaframmatica','Recupero',0,1,300)]),mG('D','Full Body Funzionale',[mE('Kettlebell Swing','Full Body',20,4,15),mE('Farmer Walk','Full Body',24,4,30),mE('Trazioni','Dorsali',0,3,10),mE('Push-up esplosivi','Petto',0,3,12),mE('Squat jump','Gambe',0,3,10)])]},
+function mG(id,nome,es){return {id:id,nome:nome,esercizi:es};}
+var PROG={
+  anziano_benessere:{nome:'Mobilita e Benessere - Senior',desc:'2 giorni - Corpo libero leggero',giorni:[mG('A','Giorno A',[mE('Cerchi con le braccia','Mobilita spalle',0,3,15),mE('Wall Push-up','Petto',0,3,12),mE('Curl manubri 3kg seduto','Bicipiti',3,3,12),mE('Rematore elastico seduto','Schiena',0,3,12),mE('Stretching guidato','Flessibilita',0,1,300)]),mG('B','Giorno B',[mE('Squat alla sedia assistito','Gambe',0,3,10),mE('Alzate sulle punte','Polpacci',0,3,15),mE('Abduzione gambe elastico','Glutei',0,3,12),mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Stretching isometrico gambe','Flessibilita',0,3,30)])]},
+  anziano_forza:{nome:'Tonificazione Senior',desc:'2 giorni - Macchine leggere',giorni:[mG('A','Giorno A',[mE('Leg Press leggera','Gambe',20,3,12),mE('Chest Press macchina','Petto',10,3,12),mE('Lat Machine leggera','Schiena',15,3,12),mE('Curl manubri 3kg seduto','Bicipiti',3,3,12),mE('Tricipiti elastico','Tricipiti',0,3,12)]),mG('B','Giorno B',[mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Shoulder Press macchina','Spalle',8,3,12),mE('Rematore cavo basso','Schiena',15,3,12),mE('Alzate laterali 2kg','Spalle',2,3,12)])]},
+  anziano_dimagrimento:{nome:'Attivita Leggera Senior',desc:'3 giorni - Circuito bassa intensita',giorni:[mG('A','Circuito A',[mE('Camminata veloce sul posto','Cardio',0,3,120),mE('Wall Push-up','Petto',0,3,12),mE('Squat alla sedia','Gambe',0,3,12),mE('Rematore elastico','Schiena',0,3,12)]),mG('B','Circuito B',[mE('Curl manubri 3kg','Bicipiti',3,3,12),mE('Leg Press leggero','Gambe',20,3,12),mE('Alzate laterali 2kg','Spalle',2,3,12),mE('Plank sul tavolo','Core',0,3,20)]),mG('C','Circuito C',[mE('Bici stazionaria leggera','Cardio',0,1,600),mE('Leg Extension leggero','Quadricipiti',10,3,12),mE('Lat Machine leggera','Schiena',15,3,12),mE('Stretching full body','Flessibilita',0,1,300)])]},
+  principiante_benessere:{nome:'Benessere e Movimento - Principiante',desc:'2 giorni - Macchine guidate + cardio',giorni:[mG('A','Giorno A',[mE('Camminata tapis roulant 10min','Cardio',0,1,600),mE('Leg Press leggera','Gambe',30,3,15),mE('Chest Press macchina','Petto',15,3,15),mE('Lat Machine leggera','Schiena',20,3,15),mE('Plank','Core',0,3,20)]),mG('B','Giorno B',[mE('Cyclette 10min','Cardio',0,1,600),mE('Leg Extension','Quadricipiti',15,3,15),mE('Rematore cavo basso','Schiena',20,3,15),mE('Alzate laterali 4kg','Spalle',4,3,12),mE('Crunch a terra','Addome',0,3,15)])]},
+  principiante_dimagrimento:{nome:'Dimagrimento - Principiante',desc:'3 giorni - Cardio + tonificazione',giorni:[mG('A','Giorno A',[mE('Tapis roulant inclinato 15min','Cardio',0,1,900),mE('Push-up sulle ginocchia','Petto',0,3,12),mE('Rematore cavo basso','Schiena',20,3,15),mE('Curl manubri','Bicipiti',5,3,12)]),mG('B','Giorno B',[mE('Cyclette 15min','Cardio',0,1,900),mE('Squat a corpo libero','Gambe',0,3,15),mE('Hip Thrust bodyweight','Glutei',0,3,15),mE('Plank','Core',0,3,30)]),mG('C','Giorno C',[mE('Corsa leggera 10min','Cardio',0,1,600),mE('Burpees modificati','Full Body',0,3,10),mE('Mountain climber lento','Core',0,3,20),mE('Lat Machine','Schiena',20,3,15)])]},
+  principiante_forza:{nome:'Forza Base - Principiante',desc:'2 giorni - Full Body macchine',giorni:[mG('A','Giorno A',[mE('Leg Press','Gambe',40,3,12),mE('Chest Press macchina','Petto',20,3,12),mE('Lat Machine presa larga','Schiena',25,3,12),mE('Shoulder Press macchina','Spalle',15,3,12),mE('Curl manubri','Bicipiti',6,3,12),mE('Tricipiti cavo','Tricipiti',12,3,12)]),mG('B','Giorno B',[mE('Leg Extension','Quadricipiti',20,3,12),mE('Leg Curl','Femorali',20,3,12),mE('Pec Deck','Petto',20,3,12),mE('Rematore cavo basso','Schiena',25,3,12),mE('Alzate laterali','Spalle',5,3,12),mE('Hip Thrust macchina','Glutei',30,3,12)])]},
+  principiante_massa:{nome:'Massa Muscolare - Principiante',desc:'3 giorni - Full Body volume',giorni:[mG('A','Giorno A',[mE('Leg Press','Gambe',40,4,12),mE('Chest Press macchina','Petto',20,4,12),mE('Lat Machine','Schiena',25,4,12),mE('Shoulder Press macchina','Spalle',15,3,12),mE('Curl manubri','Bicipiti',8,3,12),mE('Tricipiti cavo','Tricipiti',12,3,12)]),mG('B','Giorno B',[mE('Squat Smith machine','Gambe',40,4,12),mE('Pec Deck','Petto',20,4,12),mE('Rematore cavo basso','Schiena',25,4,12),mE('Alzate laterali','Spalle',6,3,12),mE('Curl martello','Bicipiti',8,3,12)]),mG('C','Giorno C',[mE('Hip Thrust macchina','Glutei',30,3,15),mE('Lat Machine stretta','Schiena',25,4,12),mE('Alzate frontali','Spalle',5,3,12),mE('Plank','Core',0,3,30)])]},
+  intermedio_forza:{nome:'Forza - Upper/Lower',desc:'4 giorni - Upper/Lower split',giorni:[mG('A','Upper A - Spinta',[mE('Panca Piana bilanciere','Petto',60,4,6),mE('Military Press bilanciere','Spalle',40,4,6),mE('Dips lastrati','Tricipiti',10,3,8),mE('Alzate laterali','Spalle',10,3,12)]),mG('B','Upper B - Tiraggio',[mE('Trazioni lastrate','Dorsali',10,4,6),mE('Rematore bilanciere','Schiena',60,4,6),mE('Curl bilanciere EZ','Bicipiti',25,4,8),mE('Face Pull','Spalle posteriori',15,3,15)]),mG('C','Lower A - Squat',[mE('Squat bilanciere','Gambe',70,4,6),mE('Leg Press','Quadricipiti',100,3,10),mE('Leg Curl','Femorali',30,3,12),mE('Calf Raises','Polpacci',0,4,20)]),mG('D','Lower B - Stacco',[mE('Stacco da terra','Catena posteriore',80,4,5),mE('Romanian Deadlift','Femorali',60,3,10),mE('Hip Thrust','Glutei',50,3,12),mE('Ab Wheel','Core',0,3,10)])]},
+  intermedio_massa:{nome:'Ipertrofia - Upper/Lower',desc:'4 giorni - Volume alto per massa',giorni:[mG('A','Upper A',[mE('Panca Piana bilanciere','Petto',60,4,10),mE('Panca Inclinata manubri','Petto alto',22,4,10),mE('Military Press manubri','Spalle',20,4,10),mE('Alzate laterali','Spalle',10,4,15)]),mG('B','Upper B',[mE('Lat Machine presa larga','Dorsali',55,4,10),mE('Rematore manubri','Schiena',24,4,10),mE('Curl bilanciere','Bicipiti',22,4,10),mE('French Press','Tricipiti',22,4,10)]),mG('C','Lower A',[mE('Squat bilanciere','Gambe',70,4,10),mE('Leg Press','Quadricipiti',100,3,12),mE('Leg Extension','Quadricipiti',35,3,15),mE('Calf Raises','Polpacci',0,5,20)]),mG('D','Lower B',[mE('Romanian Deadlift','Femorali',60,4,10),mE('Leg Curl','Femorali',30,4,12),mE('Hip Thrust','Glutei',50,4,12),mE('Bulgarian Split Squat','Gambe',20,3,10)])]},
+  intermedio_dimagrimento:{nome:'Dimagrimento - Intermedio',desc:'4 giorni - Circuiti + pesi medi',giorni:[mG('A','Giorno A',[mE('Tapis roulant HIIT 20min','Cardio',0,1,1200),mE('Panca Piana','Petto',50,3,15),mE('Trazioni assistite','Schiena',0,3,12),mE('Military Press manubri','Spalle',16,3,15)]),mG('B','Giorno B',[mE('Squat bilanciere','Gambe',50,4,15),mE('Romanian Deadlift','Femorali',50,3,12),mE('Hip Thrust','Glutei',40,3,15)]),mG('C','Giorno C',[mE('Kettlebell Swing','Full Body',16,4,15),mE('Push-up','Petto',0,3,15),mE('Rematore cavo','Schiena',35,3,15)]),mG('D','Giorno D',[mE('Corsa moderata 30min','Cardio',0,1,1800),mE('Russian Twist con peso','Core',6,3,20),mE('Ab Wheel','Core',0,3,12)])]},
+  intermedio_benessere:{nome:'Benessere e Tonificazione - Intermedio',desc:'3 giorni - Full Body bilanciato',giorni:[mG('A','Giorno A',[mE('Camminata tapis roulant 15min','Cardio',0,1,900),mE('Squat bilanciere','Gambe',50,3,12),mE('Panca Piana','Petto',50,3,12),mE('Lat Machine','Schiena',45,3,12),mE('Plank','Core',0,3,40)]),mG('B','Giorno B',[mE('Cyclette 15min','Cardio',0,1,900),mE('Romanian Deadlift','Femorali',50,3,12),mE('Rematore cavo basso','Schiena',40,3,12),mE('Hip Thrust','Glutei',40,3,15)]),mG('C','Giorno C',[mE('Ellittica 20min','Cardio',0,1,1200),mE('Curl bilanciere','Bicipiti',20,3,12),mE('Dips','Tricipiti',0,3,12),mE('Ab Wheel','Core',0,3,12)])]},
+  avanzato_forza:{nome:'Forza Massimale - Powerlifting',desc:'4 giorni - Forza pura',giorni:[mG('A','Panca + Spalle',[mE('Panca Piana bilanciere','Petto',90,5,3),mE('Military Press bilanciere','Spalle',55,4,5),mE('Dips lastrati','Tricipiti',20,4,6),mE('Alzate laterali cavi','Spalle',12,4,15)]),mG('B','Stacco + Schiena',[mE('Stacco da terra','Catena posteriore',130,5,3),mE('Rematore Pendlay','Schiena',80,4,5),mE('Trazioni lastrate','Dorsali',20,4,6)]),mG('C','Squat + Accessori',[mE('Squat bilanciere','Gambe',110,5,3),mE('Leg Press pesante','Quadricipiti',160,3,8),mE('Romanian Deadlift','Femorali',80,3,8),mE('Calf Raises','Polpacci',80,5,15)]),mG('D','Upper Volume',[mE('Panca Piana 70%','Petto',65,3,8),mE('Trazioni','Dorsali',0,3,10),mE('Military Press manubri','Spalle',24,3,10),mE('Curl bilanciere EZ','Bicipiti',28,3,10)])]},
+  avanzato_massa:{nome:'Ipertrofia Avanzata - PPL',desc:'5 giorni - Push/Pull/Legs split',giorni:[mG('A','Push - Petto Spalle Tricipiti',[mE('Panca Piana bilanciere','Petto',85,4,8),mE('Panca Inclinata manubri','Petto alto',30,4,10),mE('Military Press bilanciere','Spalle',55,4,8),mE('Alzate laterali cavi','Spalle',12,4,20),mE('Skull Crusher EZ','Tricipiti',28,3,10)]),mG('B','Pull - Schiena Bicipiti',[mE('Trazioni con peso','Dorsali',15,4,8),mE('Rematore bilanciere','Schiena',80,4,8),mE('Face Pull corda','Posteriori spalla',18,4,20),mE('Curl bilanciere EZ','Bicipiti',28,4,10)]),mG('C','Legs - Quadricipiti',[mE('Squat bilanciere','Gambe',100,4,8),mE('Hack Squat','Quadricipiti',70,3,10),mE('Leg Extension','Quadricipiti',40,3,15),mE('Calf Raises in piedi','Polpacci',70,5,20)]),mG('D','Upper - Volume Braccia',[mE('Panca Inclinata bilanciere','Petto alto',70,4,10),mE('Lat Machine presa larga','Dorsali',65,4,10),mE('Alzate laterali','Spalle',12,4,15)]),mG('E','Legs - Stacco dominante',[mE('Stacco da terra','Catena posteriore',120,4,5),mE('Romanian Deadlift','Femorali',80,4,10),mE('Hip Thrust bilanciere','Glutei',70,4,12),mE('Bulgarian Split Squat','Gambe',24,3,10)])]},
+  avanzato_dimagrimento:{nome:'Recomposizione Corporea - Avanzato',desc:'5 giorni - Forza + metabolico',giorni:[mG('A','Upper Forza + Cardio',[mE('Panca Piana bilanciere','Petto',75,4,8),mE('Trazioni','Dorsali',0,4,10),mE('Military Press bilanciere','Spalle',45,3,10),mE('Tapis roulant inclinato 20min','Cardio',0,1,1200)]),mG('B','Lower Forza + Cardio',[mE('Squat bilanciere','Gambe',90,4,8),mE('Romanian Deadlift','Femorali',70,3,10),mE('Hip Thrust','Glutei',60,3,12),mE('Cyclette HIIT 20min','Cardio',0,1,1200)]),mG('C','Full Body Metabolico',[mE('Kettlebell Swing','Full Body',20,5,15),mE('Push-up esplosivi','Petto',0,4,12),mE('Burpees','Full Body',0,4,10)]),mG('D','Upper Volume',[mE('Panca Inclinata manubri','Petto',26,4,12),mE('Lat Machine','Dorsali',60,4,12),mE('Face Pull','Spalle posteriori',15,3,15)]),mG('E','Cardio + Core',[mE('Corsa o ellittica 30min','Cardio',0,1,1800),mE('Russian Twist pesato','Core',8,3,20),mE('Ab Wheel','Core',0,3,12)])]},
+  avanzato_benessere:{nome:'Performance e Benessere - Avanzato',desc:'4 giorni - Forza + mobilita',giorni:[mG('A','Upper',[mE('Panca Piana bilanciere','Petto',70,4,8),mE('Trazioni','Dorsali',0,4,8),mE('Military Press','Spalle',45,3,10),mE('Face Pull','Spalle posteriori',15,3,15),mE('Curl bilanciere','Bicipiti',22,3,12)]),mG('B','Lower',[mE('Squat bilanciere','Gambe',80,4,8),mE('Romanian Deadlift','Femorali',65,3,10),mE('Hip Thrust','Glutei',55,3,12),mE('Calf Raises','Polpacci',0,4,20)]),mG('C','Mobilita + Core',[mE('Stretching attivo','Mobilita',0,1,1200),mE('Plank varianti','Core',0,4,40),mE('Russian Twist','Core',8,3,20)]),mG('D','Full Body Funzionale',[mE('Kettlebell Swing','Full Body',20,4,15),mE('Trazioni','Dorsali',0,3,10),mE('Push-up esplosivi','Petto',0,3,12)])]}
 };
-
-
-// 365 CONSIGLI DEL GIORNO
-var CONSIGLI=[
-"La progressione è re. Aggiungi sempre qualcosa — un kg, una rip, una serie.",
-"Dormi 7-9 ore. È durante il sonno che i muscoli crescono, non in palestra.",
-"L'idratazione influenza le prestazioni del 20-30%. Bevi prima di sentire sete.",
-"La tecnica prima del peso. Un movimento perfetto con 60 kg vale più di uno sloppy con 100.",
-"Il riscaldamento non è opzionale. 5 minuti proteggono anni di allenamento.",
-"Mangia proteine entro 30-60 minuti dal workout. Il muscolo è affamato in quel momento.",
-"La costanza batte l'intensità. 3 sedute a settimana per anni > 7 sedute per 3 mesi.",
-"Il dolore muscolare non misura la qualità dell'allenamento. Impara a distinguerlo.",
-"La creatina monoidrata è il supplemento più studiato e sicuro in assoluto. Funziona.",
-"Non saltare le gambe. Il 60% della massa muscolare è nella parte inferiore del corpo.",
-"Registra ogni allenamento. Non puoi migliorare ciò che non misuri.",
-"Lo stretching statico prima del workout riduce la forza. Fallo dopo, non prima.",
-"Il metabolismo basale aumenta con la massa muscolare. Più muscolo = più calorie bruciate a riposo.",
-"Il caffè pre-workout aumenta le performance del 10-15%. Assumilo 30-45 min prima.",
-"La respirazione conta. Espira nella fase di spinta, inspira nella fase eccentrica.",
-"Un deload ogni 4-6 settimane non è debolezza, è strategia.",
-"Il peso sulla bilancia non misura i tuoi progressi. Misura composizione corporea.",
-"I muscoli stabilizzatori sono spesso il vero limite. Lavora sul core.",
-"La frutta non fa ingrassare. Lo zucchero in eccesso sì, ma la frutta intera no.",
-"Il ROM completo stimola più fibre muscolari. Vai in profondità con sicurezza.",
-"Il tuo corpo si adatta in 4-6 settimane. Cambia stimolo periodicamente.",
-"Non copiare la routine del più grosso in palestra. Lui ha anni di adattamento che tu non hai.",
-"L'acido lattico non è la causa del DOMS. Il dolore post-allenamento viene da microlacerazioni.",
-"Mangiare grasso non fa ingrassare. L'eccesso calorico fa ingrassare.",
-"La postura è un allenamento. Stai dritto anche quando non sei in palestra.",
-"Il bicipite si lavora ogni volta che tiri. Il tricipite ogni volta che spingi.",
-"Allenare i dorsali migliora la panca piana. La catena posteriore sostiene la spinta.",
-"Le fibre lente (tipo I) rispondono meglio ai volumi alti. Le veloci (tipo II) ai carichi pesanti.",
-"Un buon riscaldamento è specifico: movimenti simili a quelli dell'allenamento principale.",
-"La mindfulness si applica anche all'allenamento. Senti il muscolo che lavora.",
-"Le calorie non sono tutte uguali ma il bilancio calorico rimane fondamentale.",
-"I piedi sono la base di tutto. Scarpe da ginnastica con suola sottile per i compound.",
-"La frequenza di allenamento conta quanto il volume. 2x a settimana per gruppo muscolare è ottimo.",
-"Non esistono esercizi magici. Esistono principi fondamentali applicati con costanza.",
-"Il tuo ego è il tuo peggior nemico in palestra. Peso giusto, tecnica giusta.",
-"L'omega-3 riduce l'infiammazione e migliora il recupero. Pesce o supplemento.",
-"Il muscolo non cresce durante l'allenamento ma durante il recupero.",
-"Variare gli angoli di lavoro stimola porzioni diverse dello stesso muscolo.",
-"La vitamina D è carente nel 70% delle persone. Influenza testosterone e immunità.",
-"Non esiste spot reduction. Non puoi dimagrire in un punto specifico.",
-"Le superserie risparmiano tempo e aumentano il volume. Abbinale con saggezza.",
-"La percezione dello sforzo (RPE) è uno strumento potente. Impara a usarla.",
-"Il testosterone naturale si ottimizza con sonno, stress basso e allenamento intenso.",
-"La cucina è il tuo secondo allenamento. Senza dieta non ci sono risultati.",
-"Le trazioni sono il re degli esercizi per il dorsale. Nessuna macchina le sostituisce.",
-"Lo squat è il re degli esercizi per le gambe. Impara la tecnica perfetta prima di caricare.",
-"Il tuo corpo non conosce i giorni della settimana. Ascolta la fatica e recupera quando serve.",
-"Il magnesio migliora il sonno e il recupero muscolare. Spesso è carente.",
-"Allenare i muscoli piccoli non renderà inutile allenare i grandi. Complementano.",
-"La pazienza è il supplemento più sottovalutato del fitness.",
-"Le pompe muscolari non indicano crescita. Sono piacevoli ma non il metro del lavoro.",
-"Allenati come se non ci fosse domani ma recupera come se ci fosse sempre un domani.",
-"La costanza nel lungo termine è più importante di qualsiasi tecnica avanzata.",
-"Il cortisolo alto sabota i risultati. Gestisci lo stress fuori dalla palestra.",
-"Non ignorare i segnali del corpo. Distingui il fastidio dal dolore reale.",
-"La massa muscolare è un investimento a lungo termine. Si costruisce anni, si perde mesi.",
-"L'allenamento funzionale migliora la qualità della vita quotidiana.",
-"Bevande sportive hanno senso solo per sessioni oltre i 60-90 minuti intensi.",
-"Il ritmo respiratorio durante il cardio indica l'intensità. Parla ma con fatica = zona ideale.",
-"Le scarpe da corsa non sono adatte per i pesi. Compra scarpe specifiche.",
-"Il volume totale (serie x rip x kg) è il principale driver di ipertrofia.",
-"Non esiste 'tono muscolare'. Esiste muscolo presente e grasso che lo copre.",
-"Allenare la mobilità delle anche previene il mal di schiena.",
-"Il movimento eccentrico (fase di discesa) è dove si costruisce più muscolo.",
-"Le proteine vegetali funzionano quanto quelle animali se combinate correttamente.",
-"Il cardio non uccide i muscoli. L'eccesso calorico negativo sì.",
-"Le pause tra le serie contano. 2-3 min per forza, 60-90 sec per ipertrofia.",
-"Il volume di allenamento deve crescere gradualmente. Non raddoppiare dall'oggi al domani.",
-"La panca piana è misura di forza ma non di salute. Non ossessionarti.",
-"Il grip (presa) è spesso il limite. Allena gli avambracci e usa il magnesia.",
-"Un personal trainer vale l'investimento, soprattutto all'inizio.",
-"Le varianti degli esercizi servono a superare plateau e prevenire infortuni.",
-"Allenare due volte la stessa parte nella stessa giornata raramente vale la pena.",
-"Il corpo risponde agli stimoli nuovi. La monotonia è nemica della crescita.",
-"La dieta mediterranea è ancora il modello alimentare più validato per salute e performance.",
-"I grassi saturi non sono il diavolo ma non esagerare. L'equilibrio è tutto.",
-"Gli antiossidanti post-workout possono ridurre l'adattamento muscolare. Meno supplementi, più cibo reale.",
-"L'acqua aiuta il metabolismo. 35ml per kg di peso corporeo è il punto di partenza.",
-"La variazione del tempo sotto tensione è un modo efficace per diversificare lo stimolo.",
-"Non servono 2 ore in palestra. 45-60 minuti intensi e focalizzati sono superiori.",
-"L'allenamento in superset riduce i tempi ma mantiene il volume. Ideale per chi ha fretta.",
-"Il corpo brucia più calorie di notte di quanto pensi. Il metabolismo notturno è attivo.",
-"Esercizi unilaterali correggono gli squilibri e migliorano la coordinazione.",
-"Non aver paura di mangiare prima di dormire. I muscoli riparano durante il sonno.",
-"Il BMI è un indice impreciso. La composizione corporea è molto più significativa.",
-"Le proteine del siero del latte (whey) sono rapidamente assimilabili. Ottime post-workout.",
-"La caseina è digerita lentamente. Ottima prima di dormire per il recupero notturno.",
-"Il grasso viscerale (addominale) è più pericoloso di quello sottocutaneo.",
-"L'intensità percepita è soggettiva. Il tuo 8/10 può essere diverso da quello di un altro.",
-"Non esiste il momento perfetto per iniziare. Il momento è adesso.",
-"Allenare il core non significa solo addominali. Include tutta la muscolatura stabilizzatrice.",
-"La frequenza cardiaca a riposo scende con l'allenamento aerobico. È un buon indicatore di salute.",
-"Le endorfine rilasciate durante l'esercizio riducono il dolore e migliorano l'umore.",
-"Il grasso non si converte in muscolo. Sono processi biologici separati.",
-"Le braccia crescono più velocemente quando alleni anche i grandi gruppi muscolari.",
-"L'allenamento migliora la sensibilità insulinica. Ottimo contro il diabete di tipo 2.",
-"La pressione arteriosa scende con l'esercizio regolare. Effetto immediato e a lungo termine.",
-"Il cervello beneficia dell'esercizio quanto il corpo. Migliora memoria e concentrazione.",
-"L'aumento di peso sulla bilancia dopo l'allenamento è spesso ritenzione idrica.",
-"Le donne non diventano 'grosse' con i pesi. La testosterona è troppo bassa.",
-"L'allenamento dopo i 40 anni è più importante di prima, non meno.",
-"I bambini che fanno sport hanno migliori risultati scolastici. L'attività fisica aiuta il cervello.",
-"Non confrontarti con gli altri in palestra. Il tuo progresso è il tuo progresso.",
-"Il metabolismo rallenta con l'età ma è controllabile con massa muscolare e attività.",
-"La mobilità si perde con l'età se non la alleni. Inizia ora.",
-"Gli esercizi di equilibrio sono fondamentali per prevenire cadute negli anziani.",
-"La meditazione e la mindfulness migliorano il recupero dall'esercizio.",
-"Il piede piatto o l'iperpronazione possono causare dolori alle ginocchia e alla schiena.",
-"Non tutti hanno la stessa struttura ossea. Adatta gli esercizi alla tua anatomia.",
-"La genetica influenza il potenziale ma non determina il tuo limite reale.",
-"I tendini si rafforzano più lentamente dei muscoli. Progredisci con prudenza.",
-"Le articolazioni hanno bisogno di movimento per nutrirsi. Il riposo assoluto le indebolisce.",
-"Il collagene è fondamentale per tendini e cartilagini. Vitamina C ne stimola la produzione.",
-"Il grasso corporeo ottimale per performance è diverso da quello ottimale per estetica.",
-"Le donne hanno cicli ormonali che influenzano le performance. Adatta l'allenamento.",
-"L'allenamento in altitudine stimola la produzione di globuli rossi. Gli atleti lo sfruttano.",
-"Il massaggio sportivo accelera il recupero e riduce il rischio di infortuni.",
-"La foam rolling è uno strumento utile ma non sostituisce il riscaldamento attivo.",
-"La velocità di esecuzione influenza il tipo di fibra muscolare stimolata.",
-"Non devi sentirti esausto dopo ogni allenamento. L'obiettivo è stimolare, non distruggere.",
-"Il warm-up mentale conta quanto quello fisico. Preparati prima di entrare in palestra.",
-"Visualizzare l'esecuzione di un esercizio migliora la performance. Lo fanno tutti i top atleti.",
-"La musica aumenta le performance del 10-15%. Scegli playlist energiche per gli allenamenti.",
-"Allenarsi in compagnia aumenta la costanza e la motivazione.",
-"Il meal prep settimanale è uno degli strumenti più efficaci per seguire la dieta.",
-"Non aspettare di essere in forma per iniziare. Inizia per diventare in forma.",
-"La regola del 2% dice: migliora del 2% alla volta. I piccoli passi fanno la differenza.",
-"Il testosterone naturale picca 15-30 minuti dopo l'inizio dell'allenamento.",
-"Il digiuno intermittente funziona principalmente perché riduce le calorie totali.",
-"Non eliminare i carboidrati. Sono il carburante principale per l'esercizio intenso.",
-"I carboidrati semplici sono utili subito dopo l'allenamento per ricaricare il glicogeno.",
-"Il glicogeno muscolare esaurito aumenta il catabolismo. Non allenarti a digiuno troppo a lungo.",
-"La fase di 'bulk' (surplus calorico) permette una crescita muscolare più efficace.",
-"La fase di 'cut' (deficit calorico) non è il momento di ridurre l'allenamento.",
-"I BCAA sono utili se la dieta è povera di proteine. Altrimenti sono spesso superflui.",
-"La glutammina non ha prove solide di efficacia per chi ha un'alimentazione adeguata.",
-"Il ZMA (zinco, magnesio, B6) migliora il sonno e il recupero se sei carente.",
-"Non allenarsi mai con dolore articolare acuto. Distingui il bruciore muscolare dall'infortunio.",
-"Il ghiaccio post-infortunio nelle prime 24-48h riduce l'infiammazione acuta.",
-"Il calore (es. borsa d'acqua calda) è utile per la tensione muscolare cronica.",
-"La fisioterapia preventiva è più economica di quella riabilitativa.",
-"Il sovrallenamento esiste ma è raro. La maggior parte delle persone non si allena abbastanza.",
-"I segnali di sovrallenamento: calo performance, sonno disturbato, irritabilità, battiti elevati a riposo.",
-"La periodizzazione è la pianificazione sistemática dei cicli di allenamento. Funziona.",
-"La periodizzazione lineare: aumenta il peso settimana dopo settimana. Semplice ed efficace per i principianti.",
-"La periodizzazione ondulante: varia intensità e volume nella stessa settimana. Più avanzata.",
-"Gli atleti d'élite si allenano meno di quanto pensi in termini di intensità massimale.",
-"Il recupero attivo (camminata, nuoto leggero) accelera il recupero rispetto al riposo totale.",
-"L'elettrostimolazione (EMS) è uno strumento di supporto, non un sostituto dell'allenamento.",
-"Le gambe allena il cuore quanto il cardio. Lo squat pesante è cardio mascherato.",
-"Il picco di GH (ormone della crescita) avviene nella fase REM del sonno.",
-"Andare a letto alla stessa ora ogni notte ottimizza il ciclo circadiano e il recupero.",
-"La luce blu degli schermi riduce la melatonina. Abbassa lo schermo 1 ora prima di dormire.",
-"Il cortisolo mattutino è naturalmente alto. Sfruttalo per allenamenti intensi mattutini.",
-"Allenarsi la sera non compromette il sonno per la maggior parte delle persone.",
-"La disidratazione dell'1-2% riduce le performance cognitive e fisiche.",
-"Le bevande gassate non idratano bene quanto l'acqua. Non sono equivalenti.",
-"Il sale (sodio) è necessario per la contrazione muscolare. Non eliminarlo completamente.",
-"La dieta chetogenica migliora l'endurance ma riduce la performance ad alta intensità.",
-"Il corpo preferisce bruciare grassi a riposo e carboidrati nell'esercizio intenso.",
-"Il vo2max è uno dei migliori indicatori di salute e longevità. Allenalo.",
-"Gli esercizi pliometrici (salti, balzi) migliorano potenza e agilità.",
-"La corsa fa male alle ginocchia? Solo se eseguita con tecnica errata o progressione sbagliata.",
-"Il nuoto è l'esercizio più completo e a basso impatto articolare.",
-"La bicicletta è ottima per cardio senza impatto sulle articolazioni.",
-"Il pilates migliora la consapevolezza corporea e il controllo del core.",
-"Lo yoga è un ottimo complemento all'allenamento con i pesi.",
-"La ginnastica artistica sviluppa una forza relativa straordinaria.",
-"Il crossfit è efficace ma il rischio di infortuni è più alto. Tecnica prima di tutto.",
-"I powerlifter sono spesso più forti dei bodybuilder. Forza e ipertrofia non sono la stessa cosa.",
-"L'allenamento per la forza pura usa carichi al 85-100% del massimale.",
-"L'allenamento per l'ipertrofia usa carichi al 65-85% del massimale.",
-"L'allenamento per l'endurance muscolare usa carichi sotto il 65% del massimale.",
-"Puoi fare tutto nello stesso mesociclo se pianifichi bene.",
-"Il 1RM (massimale) si stima meglio con test a ripetizioni che con il massimale vero.",
-"Non testare il massimale vero spesso. È un rischio non necessario.",
-"Le catene e le bande elastiche cambiano il profilo di resistenza. Strumenti avanzati ma utili.",
-"Il tempo sotto tensione ottimale per ipertrofia è tra i 30 e i 60 secondi per serie.",
-"Le serie negative (solo fase eccentrica) danno uno stimolo enorme al muscolo.",
-"Le isometriche (tenuta statica) aumentano la forza specifica nell'angolo allenato.",
-"Il contromovimento nello squat usa l'energia elastica. Lo squat pause è più difficile ma più efficace.",
-"Il paused bench press (panca con pausa) migliora la forza di base eliminando il rimbalzo.",
-"La larghezza della presa alla panca cambia il coinvolgimento di petto, spalle e tricipiti.",
-"Lo stacco a gambe rigide (RDL) è più sicuro e specifico dello stacco tradizionale per i femorali.",
-"Il leg press non sostituisce lo squat per lo sviluppo delle gambe. Li complementa.",
-"Il leg extension isola il quadricipite ma stessa la pressione patellare. Usalo con giudizio.",
-"Il face pull è uno degli esercizi più importanti per la salute delle spalle.",
-"Le alzate laterali costruiscono il deltoide laterale. Non esiste altro modo.",
-"Il military press sviluppa la forza verticale di spinta. Fondamentale per atleti.",
-"Le trazioni con presa stretta supina (chin-up) coinvolgono più i bicipiti.",
-"Le trazioni con presa larga prona coinvolgono più i dorsali.",
-"Il rematore bilanciere è il re degli esercizi per la schiena spessa.",
-"Il pulley basso costruisce la schiena con un angolo diverso. Complementare al rematore.",
-"Lo stacco da terra attiva più gruppi muscolari di qualsiasi altro esercizio.",
-"L'hip thrust è il miglior esercizio per i glutei. I dati EMG lo confermano.",
-"Il Bulgarian split squat è difficile ma straordinario per gambe e glutei.",
-"La leg press a piedi alti coinvolge più i glutei e i femorali.",
-"I calf sono resistenti. Hanno bisogno di alti volumi e ROM completo.",
-"Il sit-up tradizionale non è ideale per il core. Preferisci plank e varianti.",
-"Il dead bug è uno degli esercizi di core più sicuri ed efficaci.",
-"La pallof press allena la stabilità anti-rotazionale del core.",
-"Il dragon flag è un esercizio avanzato di core usato dai ginnasti.",
-"Non dimenticare i muscoli posteriori della spalla. Prevengono infortuni.",
-"I muscoli della cuffia dei rotatori proteggono la spalla. Allena rotazione interna ed esterna.",
-"Le alzate frontali non sono necessarie se già fai military press e panca inclinata.",
-"I dips sono un esercizio completo per petto, spalle anteriori e tricipiti.",
-"Le push-up hanno infinite varianti. Dal principiante all'esperto c'è sempre una sfida.",
-"La trazione a un braccio è il test di forza relativa più impressionante.",
-"Il pistol squat (squat su una gamba) richiede forza, mobilità ed equilibrio.",
-"L'handstand push-up è il military press del calisthenics.",
-"Il muscle-up combina trazione e dip. Richiede potenza esplosiva.",
-"Il flag umano è uno degli skill più belli del calisthenics. Richiede mesi di lavoro.",
-"Non tutto deve essere pesante. Il calisthenics insegna il controllo del corpo.",
-"Il peso corporeo non è un limite. Molti atleti di calisthenics sono più forti di chi usa i pesi.",
-"Imparare nuovi movimenti mantiene il cervello giovane e il corpo coordinato.",
-"L'allenamento in acqua riduce del 90% il peso corporeo sulle articolazioni.",
-"Il tai chi migliora l'equilibrio negli anziani riducendo il rischio di cadute del 45%.",
-"La danza è allenamento. Ritmo, coordinazione, resistenza e benessere mentale.",
-"Il tennis è uno sport completo: resistenza, esplosività, coordinazione occhio-mano.",
-"Il basket migliora salti, agilità e resistenza aerobica in modo divertente.",
-"Il calcio fa correre mediamente 10-13 km a partita. Cardio mascherato da divertimento.",
-"Le arti marziali insegnano disciplina, rispetto e controllo del corpo.",
-"Il ciclismo outdoor aggiunge la variabile del terreno che la bici indoor non può replicare.",
-"L'escursionismo in montagna brucia calorie e riduce lo stress in modo straordinario.",
-"Il giardinaggio è attività fisica. I nonni lo sapevano già.",
-"Salire le scale al posto dell'ascensore è il micro-workout più sottovalutato.",
-"Parcheggia lontano. 1000 passi extra al giorno fanno differenza nel lungo termine.",
-"I 10.000 passi al giorno sono un obiettivo utile ma il numero non è magico.",
-"Stare in piedi brucia il 20% in più di calorie rispetto a stare seduti.",
-"Le scrivanie regolabili in altezza (standing desk) migliorano la postura e l'energia.",
-"La pausa attiva ogni 45-60 minuti di lavoro seduto migliora la circolazione.",
-"Il tempo seduto è un rischio indipendente dall'esercizio. Muoviti spesso durante il giorno.",
-"Un cane ti obbliga a camminare. È uno dei migliori motivatori per l'attività fisica.",
-"Il giocare con i bambini è un ottimo workout. Non è meno valido perché divertente.",
-"Non serve la palestra. Un parco, una borsa zaino e il proprio peso corporeo bastano.",
-"I movimenti funzionali replicano le attività della vita quotidiana. Sono i più importanti.",
-"Sollevare la spesa, salire le scale, portare i bambini: tutto conta come attività fisica.",
-"Il futuro self ti ringrazierà per ogni seduta che fai oggi. Investi ora.",
-"Non esiste la pillola magica. L'unica scorciatoia è la consistenza.",
-"La disciplina batte la motivazione. La motivazione va e viene, la disciplina resta.",
-"Inizia piccolo. 10 minuti al giorno sono infinitamente meglio di zero.",
-"Il successo in palestra è fatto di mille scelte banali fatte bene ogni giorno.",
-"Trova un'attività che ami. Il miglior allenamento è quello che fai davvero.",
-"Il tuo corpo è la macchina più sofisticata del pianeta. Trattalo di conseguenza.",
-"Non ci sono scuse sufficienti per non muoversi. Ci sono solo priorità che puoi cambiare.",
-"L'allenamento non è una punizione per ciò che hai mangiato. È un regalo che fai a te stesso.",
-"Ogni rep, ogni passo, ogni scelta sana è un voto per la versione migliore di te.",
-"Non perderti nel perfetto. Il buono fatto con costanza vale più del perfetto fatto una volta.",
-"Il corpo umano è progettato per muoversi. Stare fermi è innaturale.",
-"Il movimento è medicina. Le ricerche lo confermano ogni giorno.",
-"L'esercizio fisico regolare riduce il rischio di oltre 35 malattie croniche.",
-"Invecchiare bene si pianifica giovani. L'investimento in salute è il migliore che esiste.",
-"La forza è la qualità fisica più importante da mantenere con l'età.",
-"Un anziano forte è un anziano indipendente. La forza è libertà.",
-"Non è mai troppo tardi per iniziare. Persone di 90 anni hanno guadagnato massa muscolare.",
-"Il tuo limite più grande non è fisico. È mentale. Lavoraci.",
-"Credi in te. Il corpo fa quello che la mente gli permette di immaginare.",
-"Celebra i piccoli traguardi. Ogni kg in più sul bilanciere è una vittoria.",
-"Sii paziente con te stesso. I cambiamenti fisici richiedono tempo che vale ogni secondo.",
-"La salute non è tutto, ma senza salute tutto il resto diventa secondario.",
-"Prendersi cura del proprio corpo non è vanità. È rispetto per se stessi.",
-"Il fitness non è una destinazione. È un modo di vivere.",
-"Non smettere quando sei stanco. Smetti quando hai finito.",
-"Il dolore di oggi è la forza di domani. Ma distingui il dolore buono da quello cattivo.",
-"Ogni sessione di allenamento è una vittoria contro la versione pigra di te.",
-"L'eccellenza non è un atto ma un'abitudine. Allenati come vorresti essere.",
-"Hai già fatto il passo più difficile: iniziare. Continua.",
-"Un anno fa avresti voluto essere dove sei ora. Tra un anno vorrai essere dove puoi arrivare oggi.",
-"Non aspettare le condizioni perfette. Allenati con ciò che hai, dove sei, adesso.",
-"Il corpo realizza ciò che la mente crede. Allenati anche nella testa.",
-"Fai del tuo meglio ogni giorno. Il meglio di oggi potrebbe essere diverso da ieri e va bene.",
-"La coerenza costruisce il carattere tanto quanto il fisico.",
-"Sorridi mentre ti alleni. Il corpo risponde all'umore positivo.",
-"L'allenamento è il momento più egoista della giornata — nel senso migliore. È tuo.",
-"Ogni goccia di sudore è il tuo corpo che cambia. Abbracciala.",
-"Non confrontarti con chi era ieri. Confrontati con chi vuoi essere domani.",
-"La forma fisica è la piattaforma su cui costruire tutto il resto della vita.",
-"Muoviti ogni giorno. Non per come appari ma per come ti senti.",
-"Il corpo non mente. Ascoltalo, rispettalo, sfidalo.",
-"Allena il corpo che hai, non quello che vorresti avere. Da lì si parte.",
-"La determinazione è la distanza tra chi vuoi essere e chi sei ora.",
-"Ogni allenamento è un passo avanti. Anche nei giorni in cui non sembra.",
-"Non devi essere estremo. Sii consistente.",
-"La salute è ricchezza. Investila meglio di qualsiasi azione in borsa.",
-"Il tuo futuro self ti sta guardando. Non deluderlo.",
-"COMODO.fit è qui per guidarti ogni passo. Tu devi solo presentarti.",
-];
-
-function initConsiglio(){
-  var oggi=new Date();
-  var giornoDellAnno=Math.floor((oggi-new Date(oggi.getFullYear(),0,0))/(1000*60*60*24));
-  var idx=((giornoDellAnno-1)%365+365)%365;
-  var txt=document.getElementById('consiglio-txt');
-  var num=document.getElementById('consiglio-num');
-  if(txt)txt.textContent=CONSIGLI[idx]||CONSIGLI[0];
-  if(num)num.textContent='#'+( idx+1)+' / 365';
-}
 
 // INIT
 function init(){
@@ -1452,25 +1026,13 @@ function init(){
   if(localStorage.getItem('cf_welcomed')){
     document.getElementById('sw').style.display='none';
     if(S.profilo){
-      // Mostra splash per 2s poi va alla home
-      var sp=document.getElementById('splash');
-      sp.style.display='flex';
-      setTimeout(function(){
-        sp.style.opacity='0';
-        sp.style.transition='opacity .4s';
-        setTimeout(function(){
-          sp.style.display='none';
-          goTo('home');
-          initConsiglio();
-        },400);
-      },1800);
-    } else {
-      startOnb();
-      initConsiglio();
-    }
+      var sp=document.getElementById('splash');sp.style.display='flex';
+      setTimeout(function(){sp.style.opacity='0';sp.style.transition='opacity .4s';setTimeout(function(){sp.style.display='none';goTo('home');initConsiglio();},400);},1800);
+    }else{startOnb();initConsiglio();}
   }
 }
 init();
+
 </script>
 </body>
 </html>
