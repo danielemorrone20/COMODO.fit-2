@@ -825,13 +825,13 @@ function calcProg(storia,livello){
 
 // SESSIONE
 function avviaSessione(gi){
-  giorno=scAttiva.giorni[gi];const lv=(S.profilo?.livello||'Intermedio').toLowerCase();
+  giorno=scAttiva.giorni[gi];var lv=(S.profilo&&S.profilo.livello?S.profilo.livello:'Intermedio').toLowerCase();
   SES={esercizi:giorno.esercizi.map(function(e){
-    const prog=calcProg(e.storia||[],lv);
-    const ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
-    const tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));
-    const tS=prog?prog.serie:(ult?ult.serie:(e.serieInizio||3));
-    const tR=prog?prog.rip:(ult?ult.rip:(e.ripInizio||10));
+    var prog=calcProg(e.storia||[],lv);
+    var ult=e.storia&&e.storia.length?e.storia[e.storia.length-1]:null;
+    var tKg=prog?prog.kg:(ult?ult.kg:(e.kgInizio||0));
+    var tS=prog?prog.serie:(ult?ult.serie:(e.serieInizio||3));
+    var tR=prog?prog.rip:(ult?ult.rip:(e.ripInizio||10));
     const obj=Object.assign({},e,{progAI:prog,tKg:tKg,tS:tS,tR:tR,comp:false,note:'',
       serieLog:Array.from({length:tS},function(){return {kg:tKg,rip:tR,comp:false};})});
     return obj;
