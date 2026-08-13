@@ -474,7 +474,40 @@ function renderOnb(){
 function onbChk(){var s=ONB[onbStep];var v=s.tipo==='num'?(document.getElementById('onb-v')?document.getElementById('onb-v').value:''):onbD[s.c];var ok=v&&v!=='';var b=document.getElementById('onb-next');b.style.opacity=ok?'1':'.4';b.style.pointerEvents=ok?'auto':'none';}
 function onbSel(v){onbD[ONB[onbStep].c]=v;renderOnb();}
 function onbBack(){if(onbStep>0){onbStep--;renderOnb();}}
-function onbNext(){var s=ONB[onbStep];if(s.tipo==='num'){var v=document.getElementById('onb-v');if(v)onbD[s.c]=v.value;}if(onbStep<ONB.length-1){onbStep++;renderOnb();}else{S.profilo=Object.assign({},onbD);save();document.getElementById('sonb').style.display='none';goTo('home');}}
+function onbNext(){
+  var s=ONB[onbStep];
+  if(s.tipo==='num'){var v=document.getElementById('onb-v');if(v)onbD[s.c]=v.value;}
+  if(onbStep<ONB.length-1){onbStep++;renderOnb();}
+  else{
+    S.profilo=Object.assign({},onbD);
+    // Salva localmente
+    try{
+      localStorage.setItem('cf_p',JSON.stringify(S.profilo));
+      localStorage.setItem('cf_sc',JSON.stringify(S.schede));
+      localStorage.setItem('cf_st',JSON.stringify(S.storico));
+    }catch(e){}
+    // Salva su cloud se loggato
+    if(currentUser){
+      db.collection('users').doc(currentUser.uid).set({
+        profilo:S.profilo,schede:S.schede,storico:S.storico,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){
+        document.getElementById('sonb').style.display='none';
+        goTo('home');
+        initConsiglio();
+      }).catch(function(e){
+        console.error('Save error:',e);
+        document.getElementById('sonb').style.display='none';
+        goTo('home');
+        initConsiglio();
+      });
+    }else{
+      document.getElementById('sonb').style.display='none';
+      goTo('home');
+      initConsiglio();
+    }
+  }
+}
 
 // HOME
 function renderHome(){
