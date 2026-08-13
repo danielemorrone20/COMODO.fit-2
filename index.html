@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-title" content="COMODO.fit">
 <meta name="theme-color" content="#111111">
 <title>COMODO.fit</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#111111;--sur:#1C1C1C;--sur2:#252525;--brd:#2E2E2E;--y:#F6B100;--yd:rgba(246,177,0,.13);--w:#F5F5F0;--mu:#7A7A7A;--re:#E05252;--gr:#52C97A;}
@@ -104,11 +108,23 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
 <body>
 <div id="app">
 <!-- WELCOME -->
-<div id="sw" style="position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;transition:opacity .6s;">
+<div id="sw" style="position:fixed;inset:0;background:var(--bg);z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;transition:opacity .6s;">
   <p class="ow" style="font-size:36px;font-weight:700;line-height:1.2;margin-bottom:20px;">Da oggi i tuoi allenamenti saranno più<br><span style="color:var(--y);">COMODI.</span></p>
   <p style="font-size:16px;color:var(--mu);margin-bottom:40px;">Iniziamo?</p>
   <button class="btn bp" style="width:200px;font-size:16px;padding:16px;" onclick="closeWelcome()">Sì, partiamo →</button>
   <p class="ow" style="font-size:22px;font-weight:700;color:var(--brd);margin-top:60px;letter-spacing:.1em;">COMODO.fit</p>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:3000;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;">
+  <p class="ow" style="font-size:42px;font-weight:700;margin-bottom:8px;">COMODO<span style="color:var(--y);">.fit</span></p>
+  <p style="font-size:14px;color:var(--mu);margin-bottom:48px;">Il tuo coach personale intelligente</p>
+  <button onclick="loginGoogle()" style="width:100%;background:#fff;border:none;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;margin-bottom:14px;font-family:Inter;font-size:15px;font-weight:600;color:#333;">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;">
+    Continua con Google
+  </button>
+  <p style="font-size:12px;color:var(--mu);margin-top:24px;">Accedendo accetti i termini di servizio</p>
+  <div id="login-error" style="display:none;margin-top:16px;background:rgba(224,82,82,.15);border:1px solid var(--re);border-radius:8px;padding:12px;"><p style="font-size:13px;color:var(--re);" id="login-error-txt"></p></div>
 </div>
 
 <!-- SPLASH -->
@@ -291,7 +307,8 @@ textarea{width:100%;background:var(--sur);border:1px solid var(--brd);border-rad
     <div class="srow" style="flex-direction:column;align-items:flex-start;gap:10px;"><div><p style="font-size:14px;font-weight:500;">Email trainer</p><p style="font-size:12px;color:var(--mu);margin-top:2px;">Riceve il riepilogo dopo ogni sessione</p></div>
     <input type="text" id="trainer-email" placeholder="trainer@email.com" oninput="SET.trainerEmail=this.value;saveSet()"></div>
   </div>
-  <button class="btn" style="background:var(--re);color:#fff;" onclick="resetApp()">Reset completo dati</button>
+  <button class="btn" style="background:var(--re);color:#fff;margin-bottom:10px;" onclick="resetApp()">Reset completo dati</button>
+  <button class="btn bs" onclick="logout()">Esci dall'account</button>
 </div>
 
 <!-- CHAT -->
@@ -1139,16 +1156,100 @@ var PROG={
   avanzato_benessere:{nome:'Performance e Benessere - Avanzato',desc:'4 giorni - Forza + mobilita',giorni:[mG('A','Upper',[mE('Panca Piana bilanciere','Petto',70,4,8),mE('Trazioni','Dorsali',0,4,8),mE('Military Press','Spalle',45,3,10),mE('Face Pull','Spalle posteriori',15,3,15),mE('Curl bilanciere','Bicipiti',22,3,12)]),mG('B','Lower',[mE('Squat bilanciere','Gambe',80,4,8),mE('Romanian Deadlift','Femorali',65,3,10),mE('Hip Thrust','Glutei',55,3,12),mE('Calf Raises','Polpacci',0,4,20)]),mG('C','Mobilita + Core',[mE('Stretching attivo','Mobilita',0,1,1200),mE('Plank varianti','Core',0,4,40),mE('Russian Twist','Core',8,3,20)]),mG('D','Full Body Funzionale',[mE('Kettlebell Swing','Full Body',20,4,15),mE('Trazioni','Dorsali',0,3,10),mE('Push-up esplosivi','Petto',0,3,12)])]}
 };
 
+// FIREBASE CONFIG
+var firebaseConfig = {
+  apiKey: "AIzaSyCCfC_dxhbDRnQpe3tP8lbZgLi_alNjKSQ",
+  authDomain: "comodo-fit.firebaseapp.com",
+  projectId: "comodo-fit",
+  storageBucket: "comodo-fit.firebasestorage.app",
+  messagingSenderId: "469091243541",
+  appId: "1:469091243541:web:3b5a156c79d2d2efcc201c"
+};
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+var currentUser = null;
+
+// AUTH FUNCTIONS
+function loginGoogle(){
+  var provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(function(err){
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-error-txt').textContent='Errore login: '+err.message;
+  });
+}
+
+function logout(){
+  auth.signOut().then(function(){
+    currentUser=null;
+    S={profilo:null,schede:[],storico:[]};
+    localStorage.clear();
+    showLoginScreen();
+  });
+}
+
+function showLoginScreen(){
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('bnav').style.display='none';
+  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
+  var sp=document.getElementById('splash');if(sp)sp.style.display='none';
+}
+
+// FIRESTORE SYNC
+function saveToCloud(){
+  if(!currentUser)return;
+  db.collection('users').doc(currentUser.uid).set({
+    profilo: S.profilo,
+    schede: S.schede,
+    storico: S.storico,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){console.error('Save error:',e);});
+}
+
+function loadFromCloud(callback){
+  if(!currentUser){callback();return;}
+  db.collection('users').doc(currentUser.uid).get().then(function(doc){
+    if(doc.exists){
+      var data=doc.data();
+      if(data.profilo)S.profilo=data.profilo;
+      if(data.schede)S.schede=data.schede;
+      if(data.storico)S.storico=data.storico;
+    }
+    callback();
+  }).catch(function(e){console.error('Load error:',e);callback();});
+}
+
+// Override save to also sync to cloud
+var _originalSave = save;
+function save(){
+  _originalSave();
+  saveToCloud();
+}
+
+// AUTH STATE LISTENER
+auth.onAuthStateChanged(function(user){
+  if(user){
+    currentUser=user;
+    document.getElementById('screen-login').style.display='none';
+    // Load data from cloud
+    loadFromCloud(function(){
+      if(S.profilo){
+        var sp=document.getElementById('splash');sp.style.display='flex';
+        setTimeout(function(){sp.style.opacity='0';sp.style.transition='opacity .4s';setTimeout(function(){sp.style.display='none';goTo('home');initConsiglio();},400);},1800);
+      }else{
+        startOnb();initConsiglio();
+      }
+    });
+  }else{
+    currentUser=null;
+    showLoginScreen();
+  }
+});
+
 // INIT
 function init(){
-  load();
-  if(localStorage.getItem('cf_welcomed')){
-    document.getElementById('sw').style.display='none';
-    if(S.profilo){
-      var sp=document.getElementById('splash');sp.style.display='flex';
-      setTimeout(function(){sp.style.opacity='0';sp.style.transition='opacity .4s';setTimeout(function(){sp.style.display='none';goTo('home');initConsiglio();},400);},1800);
-    }else{startOnb();initConsiglio();}
-  }
+  // Firebase handles auth state - just show login initially
+  document.getElementById('screen-login').style.display='flex';
 }
 init();
 
