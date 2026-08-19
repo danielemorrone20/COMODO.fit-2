@@ -553,7 +553,10 @@ var CHAT_Q=[
   {id:'tempo',t:'Quanto tempo hai per sessione?',op:['30-45 min','45-60 min','60-90 min','Oltre 90 min']},
 ];
 function showNewScheda(){nsStep=0;nsData={};nsQ={chatStep:0,chatAnswers:{}};document.getElementById('mo-new').classList.add('on');renderNS();}
-function closeMoNew(){document.getElementById('mo-new').classList.remove('on');}
+function closeMoNew(){
+  var mo=document.getElementById('mo-new');
+  if(mo){mo.classList.remove('on');mo.style.display='none';setTimeout(function(){mo.style.display='';},300);}
+}
 function renderNS(){
   var b=document.getElementById('mo-new-body');
   var p=S.profilo||{};var lv=(p.livello||'Intermedio').toLowerCase();var eta=parseInt(p.eta||0);
@@ -606,7 +609,12 @@ function chatAns(oi){var qi=nsQ.chatStep||0;if(qi>=CHAT_Q.length)return;nsQ.chat
 function addTemplate(key){
   var t=JSON.parse(JSON.stringify(PROG[key]));
   for(var i=0;i<t.giorni.length;i++){for(var j=0;j<t.giorni[i].esercizi.length;j++){if(!t.giorni[i].esercizi[j].storia)t.giorni[i].esercizi[j].storia=[];}}
-  S.schede.push(t);save();closeMoNew();renderHome();
+  S.schede.push(t);
+  save();
+  closeMoNew();
+  renderHome();
+  // Apri subito la scheda appena creata
+  setTimeout(function(){apriScheda(S.schede.length-1);},100);
 }
 async function inviaDescrizioneScheda(){
   var inp=document.getElementById('ns-ai-input');if(!inp)return;var txt=inp.value.trim();if(!txt)return;inp.value='';
@@ -628,7 +636,15 @@ async function inviaDescrizioneScheda(){
   }
   renderNS();
 }
-function salvaDaAI(){if(!nsData.schedaGenerata)return;nsData.schedaGenerata.desc='Creata con COMODO AI';S.schede.push(nsData.schedaGenerata);save();closeMoNew();renderHome();}
+function salvaDaAI(){
+  if(!nsData.schedaGenerata)return;
+  nsData.schedaGenerata.desc='Creata con COMODO AI';
+  S.schede.push(nsData.schedaGenerata);
+  save();
+  closeMoNew();
+  renderHome();
+  setTimeout(function(){apriScheda(S.schede.length-1);},100);
+}
 
 // ESERCIZI PRESET
 var ESP={'Petto':['Panca Piana','Panca Inclinata','Croci ai cavi','Dips','Pec Deck','Push-up','Chest Press (macchina)'],'Schiena':['Trazioni','Lat Machine','Rematore bilanciere','Rematore manubri','Pulley basso','Stacco da terra','Face Pull'],'Spalle':['Military Press','Alzate laterali','Alzate frontali','Scrollate','Arnold Press','Shoulder Press (macchina)'],'Gambe':['Squat','Leg Press','Romanian Deadlift','Leg Extension','Leg Curl','Hip Thrust','Affondi','Calf Raises','Hack Squat'],'Bicipiti':['Curl bilanciere','Curl manubri','Curl martello','Curl bilanciere EZ'],'Tricipiti':['Dips','French Press','Skull Crusher','Pushdown cavi','Tricipiti cavo'],'Core':['Plank','Crunch','Ab Wheel','Leg Raise','Russian Twist','Mountain climber'],'Cardio':['Tapis roulant','Cyclette','Ellittica','Kettlebell Swing','Burpees']};
