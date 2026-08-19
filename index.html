@@ -562,12 +562,12 @@ function renderNS(){
   var p=S.profilo||{};var lv=(p.livello||'Intermedio').toLowerCase();var eta=parseInt(p.eta||0);
   if(nsStep===0){
     b.innerHTML='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Come vuoi creare la scheda?</p>'
-      +'<div class="opt" onclick="nsStep=1;renderNS()"><p>📋 Usa un programma pronto</p><small>Programmi studiati per il tuo livello</small></div>'
-      +'<div class="opt" onclick="nsStep=4;renderNS()"><p>✏️ Crea da zero</p><small>Descrivi a COMODO AI cosa vuoi fare</small></div>';
+      +'<button onclick="nsStep=1;renderNS()" style="width:100%;text-align:left;background:var(--sur);border:1.5px solid var(--brd);border-radius:10px;padding:14px 16px;cursor:pointer;margin-bottom:10px;"><p class="ow" style="font-size:17px;font-weight:600;">📋 Usa un programma pronto</p><small style="font-size:12px;color:var(--mu);display:block;margin-top:2px;">Programmi studiati per il tuo livello</small></button>'
+      +'<button onclick="nsStep=4;renderNS()" style="width:100%;text-align:left;background:var(--sur);border:1.5px solid var(--brd);border-radius:10px;padding:14px 16px;cursor:pointer;"><p class="ow" style="font-size:17px;font-weight:600;">✏️ Crea da zero</p><small style="font-size:12px;color:var(--mu);display:block;margin-top:2px;">Descrivi a COMODO AI cosa vuoi fare</small></button>';
   }else if(nsStep===1){
     var obs=[{id:'forza',l:'💪 Forza'},{id:'massa',l:'📈 Massa'},{id:'dimagrimento',l:'🔥 Dimagrimento'},{id:'benessere',l:'🧘 Benessere'}];
     var html='<p style="font-size:13px;color:var(--mu);margin-bottom:16px;">Obiettivo?</p>';
-    for(var i=0;i<obs.length;i++){var o=obs[i];html+='<div class="opt'+(nsQ.obiettivo===o.id?' sel':'')+'" onclick="nsQ.obiettivo=\''+o.id+'\';renderNS()"><p>'+o.l+'</p></div>';}
+    for(var i=0;i<obs.length;i++){var o=obs[i];html+='<button onclick="nsQ.obiettivo=\''+o.id+'\';renderNS()" style="width:100%;text-align:left;background:'+(nsQ.obiettivo===o.id?'rgba(246,177,0,.13)':'var(--sur)')+';border:1.5px solid '+(nsQ.obiettivo===o.id?'var(--y)':'var(--brd)')+';border-radius:10px;padding:14px 16px;cursor:pointer;margin-bottom:10px;"><p class="ow" style="font-size:17px;font-weight:600;color:'+(nsQ.obiettivo===o.id?'var(--y)':'var(--w)')+'">'+o.l+'</p></button>';}
     html+='<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn bs" style="flex:1;" onclick="nsStep=0;renderNS()">← Indietro</button><button class="btn bp" style="flex:2;opacity:'+(nsQ.obiettivo?1:.4)+';pointer-events:'+(nsQ.obiettivo?'auto':'none')+';" onclick="nsStep=2;nsQ.chatStep=0;renderNS()">Avanti →</button></div>';
     b.innerHTML=html;
   }else if(nsStep===2){
