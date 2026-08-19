@@ -414,14 +414,24 @@ function resetApp(){if(!confirm('Cancellare tutti i dati?'))return;localStorage.
 
 // NAVIGATION
 function goTo(sc){
-  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
+  document.querySelectorAll('.scr').forEach(function(e){
+    e.classList.remove('on');
+    e.style.display='';
+  });
   document.getElementById('screen-chat').style.display='none';
   var noNav=['sessione','completato','chat','libero'];
   document.getElementById('bnav').style.display=noNav.indexOf(sc)>=0?'none':'flex';
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
   if(sc==='chat'){openChat(chatFrom);return;}
   var el=document.getElementById('screen-'+sc);
-  if(el){el.classList.add('on');el.scrollTop=0;}
+  if(el){
+    el.classList.add('on');
+    el.scrollTop=0;
+    // Per sessione, forza display block
+    if(sc==='sessione'||sc==='completato'||sc==='libero'){
+      el.style.display='block';
+    }
+  }
   var tabMap={home:'home',storico:'storico',profilo:'profilo',impostazioni:'impostazioni'};
   if(tabMap[sc]){var nb=document.querySelector('[data-t="'+tabMap[sc]+'"]');if(nb)nb.classList.add('on');}
   if(sc==='home'){renderHome();initConsiglio();}
@@ -1018,7 +1028,10 @@ function openChat(from){
   var cc=document.getElementById('screen-chat');
   cc.style.cssText='display:flex !important;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);max-width:430px;margin:0 auto;';
   document.getElementById('bnav').style.display='none';
-  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
+  document.querySelectorAll('.scr').forEach(function(e){
+    e.classList.remove('on');
+    e.style.display='';
+  });
   setTimeout(function(){var m=document.getElementById('chat-msgs');if(m)m.scrollTop=m.scrollHeight;var inp=document.getElementById('chat-in');if(inp){inp.removeAttribute('disabled');inp.focus();}},300);
 }
 function chatBack(){document.getElementById('screen-chat').style.cssText='display:none;';if(chatFrom==='sessione'){goTo('sessione');renderSES();}else goTo('home');}
@@ -1232,7 +1245,10 @@ function logout(){
 function showLoginScreen(){
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('bnav').style.display='none';
-  document.querySelectorAll('.scr').forEach(function(e){e.classList.remove('on');});
+  document.querySelectorAll('.scr').forEach(function(e){
+    e.classList.remove('on');
+    e.style.display='';
+  });
   var sp=document.getElementById('splash');if(sp)sp.style.display='none';
 }
 
